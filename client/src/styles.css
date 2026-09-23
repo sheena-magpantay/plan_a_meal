@@ -1,127 +1,230 @@
-/* Deliberately plain. Module 3 covered styling in React properly: CSS modules,
-   Tailwind, styled-components, a component library. Replace this with whichever
-   you chose and can defend. */
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500&family=Poppins:wght@400;500;600&family=Qwigley&display=swap");
 
 :root {
-  color-scheme: light dark;
-  --bg: #fbfbfd;
-  --fg: #1a1a1f;
-  --muted: #5c5c6b;
-  --line: #dcdce6;
-  --card: #ffffff;
-  --accent: #4a3f8f;
-  --warn-bg: #fff6dd;
-  --warn-line: #e0bf6a;
-  --error-bg: #fdeaea;
-  --error-line: #d98a8a;
-}
+  /* Color palette */
+  --color-primary: #394634;
+  --color-accent: #dde2d4;
+  --color-bg: #e9dfce;
+  --color-surface: #ffffff;
+  --color-text-1: #26251f;
+  --color-text-2: #706f66;
+  --color-on-primary: #ffffff;
+  --color-border: #d4cfc4;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #14141a;
-    --fg: #ececf2;
-    --muted: #a0a0b0;
-    --line: #33333f;
-    --card: #1d1d25;
-    --accent: #a99cf0;
-    --warn-bg: #3a3320;
-    --warn-line: #7d6a30;
-    --error-bg: #3a2323;
-    --error-line: #7d4040;
-  }
-}
+  /* Typography */
+  --font-heading: "Playfair Display", Georgia, serif;
+  --font-body: "Poppins", system-ui, sans-serif;
+  --font-script: "Qwigley", cursive;
+  --text-heading: 36px;
+  --text-title: 24px;
+  --text-body: 16px;
+  --text-label: 12px;
 
-* { box-sizing: border-box; }
+  /* Spacing */
+  --space-1: 8px;  /* tight */
+  --space-3: 24px; /* screen edge */
+  --space-4: 32px; /* standard */
+
+  /* Shape */
+  --radius-md: 12px;
+  --radius-lg: 24px;
+  --radius-pill: 999px;
+}
 
 body {
   margin: 0;
-  background: var(--bg);
-  color: var(--fg);
-  font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text-1);
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  line-height: 1.5;
 }
 
-.page { max-width: 44rem; margin: 0 auto; padding: 2rem 1rem 4rem; }
-
-h1 { margin: 0 0 .25rem; font-size: 1.9rem; }
-h2 { margin: 0 0 .75rem; font-size: 1.15rem; }
-h3 { margin: 0; font-size: 1.05rem; }
-
-.lede, .muted { color: var(--muted); }
-.lede { margin-top: 0; }
-
-.demo-notice {
-  background: var(--warn-bg);
-  border: 1px solid var(--warn-line);
-  border-radius: .5rem;
-  padding: .9rem 1rem;
-  margin: 1.5rem 0;
+/* Type scale: Heading 36 / Title 24 / Body 16 / Label 12 */
+h1,
+.text-heading {
+  font-family: var(--font-heading);
+  font-size: var(--text-heading);
+  font-weight: 400;
+  line-height: 1.2;
+  margin: 0 0 var(--space-3);
 }
 
-.error {
-  background: var(--error-bg);
-  border: 1px solid var(--error-line);
-  border-radius: .5rem;
-  padding: .75rem 1rem;
+h2,
+.text-title {
+  font-family: var(--font-body);
+  font-size: var(--text-title);
+  font-weight: 400;
+  line-height: 1.3;
+  margin: 0 0 var(--space-1);
 }
 
+.text-body {
+  font-size: var(--text-body);
+}
+
+.text-label {
+  font-size: var(--text-label);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.text-muted {
+  color: var(--color-text-2);
+}
+
+/* Script wordmark, e.g. "Plan A Meal" */
+.logo {
+  font-family: var(--font-script);
+  font-weight: 400;
+  line-height: 1;
+}
+
+/* Cards: white surface, soft border, large radius */
 .card {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: .5rem;
-  padding: 1rem;
-  margin-bottom: 1rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
 }
 
-form.card { display: flex; flex-direction: column; gap: .35rem; }
-
-label { font-size: .85rem; color: var(--muted); margin-top: .5rem; }
-
-input, textarea {
-  font: inherit;
-  color: inherit;
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: .35rem;
-  padding: .5rem .6rem;
-}
-
-button {
-  font: inherit;
-  cursor: pointer;
-  border: 1px solid var(--accent);
-  background: var(--accent);
-  color: #fff;
-  border-radius: .35rem;
-  padding: .45rem .9rem;
-  margin-top: .75rem;
-  align-self: flex-start;
-}
-
-button:disabled { opacity: .6; cursor: default; }
-
-/* Never remove a focus outline without replacing it. Keyboard users need to
-   see where they are, and it is checked. */
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-
-.list { list-style: none; padding: 0; margin: 0; }
-
-.row-head { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
-
-.spooky { color: var(--accent); letter-spacing: .15em; }
-
-.card footer {
-  display: flex;
-  justify-content: space-between;
+/* Buttons: pill shape. Primary (dark green), outline, and accent (sage) */
+.btn {
+  display: inline-flex;
   align-items: center;
-  gap: 1rem;
-  margin-top: .5rem;
-  font-size: .85rem;
-  color: var(--muted);
+  justify-content: center;
+  gap: var(--space-1);
+  padding: 10px 20px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
 }
 
-.card footer button {
-  margin-top: 0;
-  background: transparent;
-  color: var(--muted);
-  border-color: var(--line);
+.btn:hover {
+  opacity: 0.85;
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.btn-outline {
+  background: var(--color-surface);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+.btn-accent {
+  background: var(--color-accent);
+  color: var(--color-primary);
+}
+
+/* Page content sits beside the fixed sidebar */
+.container {
+  margin-left: 84px;
+  padding: var(--space-3);
+}
+
+/* Desktop: fixed left rail, icon + label, 84px wide */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 84px;
+  background: var(--color-primary);
+  display: flex;
+  flex-direction: column;
+  padding-top: var(--space-4);
+  z-index: 10;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 100%;
+}
+
+.listItem {
+  display: flex;
+  justify-content: center;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: var(--space-1) 0;
+  text-decoration: none;
+  color: var(--color-on-primary);
+  font-size: 11px;
+  opacity: 0.55;
+}
+
+.item:hover {
+  opacity: 0.8;
+}
+
+.itemActive {
+  opacity: 1;
+}
+
+.icon {
+  width: 22px;
+  height: 22px;
+}
+
+.label {
+  line-height: 1;
+}
+
+/* Below 768px: same nav, laid out as a fixed bottom bar instead */
+@media (max-width: 767px) {
+  .container {
+    margin-left: 0;
+    padding-bottom: calc(64px + var(--space-3));
+  }
+
+  .sidebar {
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 64px;
+    flex-direction: row;
+    padding-top: 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    border-top: 1px solid var(--color-border);
+  }
+
+  .list {
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+    height: 100%;
+    gap: 0;
+  }
+
+  .listItem {
+    flex: 1;
+  }
+
+  .item {
+    font-size: 10px;
+  }
 }
