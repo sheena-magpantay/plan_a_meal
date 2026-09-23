@@ -10,13 +10,19 @@ export default function App() {
     <>
       <Navbar />
       <div className="container">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/recipes" element={<Recipes />} />
-          <Route path="/recipes/:id" element={<RecipeIngredients />} />
-          <Route path="/shopping-list" element={<ShoppingList />} />
-          <Route path="/profile" element={<p>Profile</p>} />
-        </Routes>
+        <header className="brand">
+          <p className="brandName">Plan a Meal</p>
+          <p className="brandTagline">Weekly Meal Planner</p>
+        </header>
+        <main className="screen">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/recipes" element={<Recipes />} />
+            <Route path="/recipes/:id" element={<RecipeIngredients />} />
+            <Route path="/shopping-list" element={<ShoppingList />} />
+            <Route path="/profile" element={<p>Profile</p>} />
+          </Routes>
+        </main>
       </div>
     </>
   );

@@ -5,6 +5,7 @@
   --color-primary: #394634;
   --color-accent: #dde2d4;
   --color-bg: #e9dfce;
+  --color-bg-light: #f6f1e8;
   --color-surface: #ffffff;
   --color-text-1: #26251f;
   --color-text-2: #706f66;
@@ -29,6 +30,11 @@
   --radius-md: 12px;
   --radius-lg: 24px;
   --radius-pill: 999px;
+
+  /* Sidebar */
+  --sidebar-width: 120px;
+  --sidebar-pad-top: 0px;
+  --logo-size: 130px;
 }
 
 body {
@@ -130,22 +136,74 @@ h2,
 
 /* Page content sits beside the fixed sidebar */
 .container {
-  margin-left: 84px;
+  box-sizing: border-box;
+  min-height: 100vh;
+  margin-left: var(--sidebar-width);
   padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
 }
 
-/* Desktop: fixed left rail, icon + label, 84px wide */
+/* "Plan a Meal" wordmark, top center of every screen */
+.brand {
+  margin-bottom: var(--space-3);
+  text-align: center;
+  white-space: nowrap;
+  color: var(--color-primary);
+}
+
+/* Lighter panel that holds the current screen; fills the rest of the height */
+.screen {
+  flex: 1;
+  background: var(--color-bg-light);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+}
+
+.brandName {
+  /* Qwigley leaves ~0.27em of empty space below its letters; pull the
+     tagline up so it sits right under the script */
+  margin: 0 0 -0.25em;
+  font-family: var(--font-script);
+  font-size: 56px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.brandTagline {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: var(--text-body);
+  line-height: 1;
+}
+
+/* Desktop: fixed left rail. The green panel is drawn by ::before so its
+   rounded top edge can start at the middle of the logo. */
 .sidebar {
   position: fixed;
   top: 0;
   left: 0;
   bottom: 0;
-  width: 84px;
-  background: var(--color-primary);
+  box-sizing: border-box;
+  width: var(--sidebar-width);
+  padding: var(--sidebar-pad-top) 10px 10px;
+  background: transparent;
   display: flex;
   flex-direction: column;
-  padding-top: var(--space-4);
   z-index: 10;
+}
+
+.sidebar::before {
+  content: "";
+  position: absolute;
+  /* sidebar padding + half the logo */
+  top: calc(var(--sidebar-pad-top) + var(--logo-size) / 2);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--color-primary);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  z-index: -1;
 }
 
 .list {
@@ -183,9 +241,26 @@ h2,
   opacity: 1;
 }
 
+/* Logo link: always full opacity, no active or hover state */
+.item.itemLogo,
+.item.itemLogo:hover {
+  opacity: 1;
+}
+
+/* Logo sits flush against the top of the screen */
+.item.itemLogo {
+  padding-top: 0;
+}
+
 .icon {
-  width: 22px;
-  height: 22px;
+  width: 30px;
+  height: 30px;
+}
+
+.logoIcon {
+  width: var(--logo-size);
+  height: var(--logo-size);
+  object-fit: contain;
 }
 
 .label {
@@ -199,6 +274,18 @@ h2,
     padding-bottom: calc(64px + var(--space-3));
   }
 
+  .screen {
+    padding: var(--space-3);
+  }
+
+  .brandName {
+    font-size: 40px;
+  }
+
+  .brandTagline {
+    font-size: var(--text-label);
+  }
+
   .sidebar {
     top: auto;
     left: 0;
@@ -207,9 +294,14 @@ h2,
     width: 100%;
     height: 64px;
     flex-direction: row;
-    padding-top: 0;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding: 0 0 env(safe-area-inset-bottom, 0px);
+    background: var(--color-primary);
     border-top: 1px solid var(--color-border);
+  }
+
+  /* Bottom bar is a plain strip; no rounded panel */
+  .sidebar::before {
+    display: none;
   }
 
   .list {
@@ -226,5 +318,11 @@ h2,
 
   .item {
     font-size: 10px;
+  }
+
+  /* Smaller so it fits the 64px-tall bottom bar */
+  .logoIcon {
+    width: 36px;
+    height: 36px;
   }
 }
