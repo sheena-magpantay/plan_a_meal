@@ -1,7 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import { pool } from './db/pool.js'
-import * as sightings from './sightingsRepo.js'
+import * as recipes from './recipesRepo.js'
 
 const app = express()
 
@@ -36,72 +36,177 @@ app.get('/readyz', async (request, response) => {
   }
 })
 
-// Validation lives on the server because the client can be bypassed. The
-// browser form is for a fast, friendly message; this is for correctness.
-function validate(body) {
-  const errors = []
-  const place = typeof body.place === 'string' ? body.place.trim() : ''
-  const description =
-    typeof body.description === 'string' ? body.description.trim() : ''
-  const spookiness = Number(body.spookiness)
-
-  if (!place) errors.push('place is required')
-  if (place.length > 120) errors.push('place must be 120 characters or fewer')
-  if (description.length > 2000) errors.push('description must be 2000 characters or fewer')
-  if (!Number.isInteger(spookiness) || spookiness < 1 || spookiness > 5) {
-    errors.push('spookiness must be a whole number from 1 to 5')
-  }
-
-  return { errors, value: { place, description, spookiness } }
+// Ids are SERIAL integers. Anything else cannot match a row, and passing it to
+// PostgreSQL would be a 500 (invalid input syntax) instead of a 404.
+function parseId(value) {
+  const id = Number(value)
+  return Number.isInteger(id) && id > 0 ? id : null
 }
 
-app.get('/api/sightings', async (request, response, next) => {
+// Validation lives on the server because the client can be bypassed. The
+// browser form is for a fast, friendly message; this is for correctness.
+function validateIngredients(body) {
+  if (!Array.isArray(body.ingredients)) {
+    return { errors: ['ingredients must be a list'], value: [] }
+  }
+
+  const errors = []
+  if (body.ingredients.length > 100) errors.push('a recipe can have at most 100 ingredients')
+
+  const value = body.ingredients.map((item, index) => {
+    const n = index + 1
+    const name = typeof item?.name === 'string' ? item.name.trim() : ''
+    const unit = typeof item?.unit === 'string' ? item.unit.trim() : ''
+    const quantity = Number(item?.quantity)
+    const cost = Number(item?.estimated_cost)
+
+    if (!name) errors.push(`ingredient ${n}: name is required`)
+    if (name.length > 120) errors.push(`ingredient ${n}: name must be 120 characters or fewer`)
+    if (unit.length > 20) errors.push(`ingredient ${n}: unit must be 20 characters or fewer`)
+    if (!Number.isFinite(quantity) || quantity <= 0 || quantity > 100000) {
+      errors.push(`ingredient ${n}: quantity must be a number above 0`)
+    }
+    if (!Number.isFinite(cost) || cost < 0 || cost > 1000000) {
+      errors.push(`ingredient ${n}: estimated cost must be a number, 0 or more`)
+    }
+
+    return { name, unit, quantity, estimated_cost: cost }
+  })
+
+  return { errors, value }
+}
+
+// A week is named by its Monday, as YYYY-MM-DD. The client works out which
+// Monday "this week" is in the user's own time zone and sends it, because the
+// server's clock may be in a different one.
+function parseWeek(value) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null
+  const date = new Date(`${value}T00:00:00Z`)
+  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) return null
+  return date.getUTCDay() === 1 ? value : null
+}
+
+const WEEK_ERROR = 'week must be a Monday, written YYYY-MM-DD'
+
+function validateMealPlanEntry(body) {
+  const errors = []
+  const recipe_id = parseId(body.recipe_id)
+  const day = body.day
+  const week_start = parseWeek(body.week_start)
+
+  if (!recipe_id) errors.push('recipe_id must be a recipe id')
+  if (!recipes.DAYS.includes(day)) errors.push(`day must be one of ${recipes.DAYS.join(', ')}`)
+  if (!week_start) errors.push(WEEK_ERROR)
+
+  return { errors, value: { recipe_id, day, week_start } }
+}
+
+function validateCheck(body) {
+  const errors = []
+  const week_start = parseWeek(body.week_start)
+  const item_key = typeof body.item_key === 'string' ? body.item_key : ''
+
+  if (!week_start) errors.push(WEEK_ERROR)
+  if (!item_key || item_key.length > 200) errors.push('item_key is required')
+  if (typeof body.checked !== 'boolean') errors.push('checked must be true or false')
+
+  return { errors, value: { week_start, item_key, checked: body.checked } }
+}
+
+app.get('/api/recipes', async (request, response, next) => {
   try {
-    response.json(await sightings.getAll(pool))
+    response.json(await recipes.listRecipes(pool))
   } catch (error) {
     next(error)
   }
 })
 
-app.get('/api/sightings/:id', async (request, response, next) => {
+app.get('/api/recipes/:id', async (request, response, next) => {
+  const id = parseId(request.params.id)
+  if (!id) return response.status(404).json({ error: 'Not found' })
+
   try {
-    const row = await sightings.getById(pool, request.params.id)
-    if (!row) return response.status(404).json({ error: 'Not found' })
-    response.json(row)
+    const recipe = await recipes.getRecipe(pool, id)
+    if (!recipe) return response.status(404).json({ error: 'Not found' })
+    response.json(recipe)
   } catch (error) {
     next(error)
   }
 })
 
-app.post('/api/sightings', async (request, response, next) => {
-  const { errors, value } = validate(request.body ?? {})
+app.put('/api/recipes/:id/ingredients', async (request, response, next) => {
+  const id = parseId(request.params.id)
+  if (!id) return response.status(404).json({ error: 'Not found' })
+
+  const { errors, value } = validateIngredients(request.body ?? {})
   if (errors.length > 0) return response.status(400).json({ error: errors.join('; ') })
 
   try {
-    response.status(201).json(await sightings.create(pool, value))
+    const recipe = await recipes.replaceIngredients(pool, id, value)
+    if (!recipe) return response.status(404).json({ error: 'Not found' })
+    response.json(recipe)
   } catch (error) {
     next(error)
   }
 })
 
-app.put('/api/sightings/:id', async (request, response, next) => {
-  const { errors, value } = validate(request.body ?? {})
+// GET /api/meal-plan?week=2026-09-21
+app.get('/api/meal-plan', async (request, response, next) => {
+  const week = parseWeek(request.query.week)
+  if (!week) return response.status(400).json({ error: WEEK_ERROR })
+
+  try {
+    response.json(await recipes.listMealPlan(pool, week))
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.post('/api/meal-plan', async (request, response, next) => {
+  const { errors, value } = validateMealPlanEntry(request.body ?? {})
   if (errors.length > 0) return response.status(400).json({ error: errors.join('; ') })
 
   try {
-    const row = await sightings.update(pool, request.params.id, value)
-    if (!row) return response.status(404).json({ error: 'Not found' })
-    response.json(row)
+    const entry = await recipes.addToMealPlan(pool, value)
+    if (!entry) return response.status(404).json({ error: 'No such recipe' })
+    response.status(201).json(entry)
   } catch (error) {
     next(error)
   }
 })
 
-app.delete('/api/sightings/:id', async (request, response, next) => {
+app.delete('/api/meal-plan/:id', async (request, response, next) => {
+  const id = parseId(request.params.id)
+  if (!id) return response.status(404).json({ error: 'Not found' })
+
   try {
-    const removed = await sightings.remove(pool, request.params.id)
+    const removed = await recipes.removeFromMealPlan(pool, id)
     if (!removed) return response.status(404).json({ error: 'Not found' })
     response.status(204).end()
+  } catch (error) {
+    next(error)
+  }
+})
+
+// GET /api/shopping-list?week=2026-09-21
+app.get('/api/shopping-list', async (request, response, next) => {
+  const week = parseWeek(request.query.week)
+  if (!week) return response.status(400).json({ error: WEEK_ERROR })
+
+  try {
+    response.json(await recipes.getShoppingList(pool, week))
+  } catch (error) {
+    next(error)
+  }
+})
+
+// Tick or untick one line: { week_start, item_key, checked }
+app.put('/api/shopping-list/checks', async (request, response, next) => {
+  const { errors, value } = validateCheck(request.body ?? {})
+  if (errors.length > 0) return response.status(400).json({ error: errors.join('; ') })
+
+  try {
+    response.json(await recipes.setShoppingItemChecked(pool, value))
   } catch (error) {
     next(error)
   }

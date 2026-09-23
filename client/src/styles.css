@@ -11,6 +11,7 @@
   --color-text-2: #706f66;
   --color-on-primary: #ffffff;
   --color-border: #d4cfc4;
+  --color-error: #a33a2a;
 
   /* Typography */
   --font-heading: "Playfair Display", Georgia, serif;
@@ -134,6 +135,53 @@ h2,
   color: var(--color-primary);
 }
 
+.btn-sm {
+  padding: 6px 12px;
+  font-size: var(--text-label);
+}
+
+/* Square-ish button holding only an icon, e.g. the day picker's check */
+.iconBtn {
+  padding: 8px 12px;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Keyboard focus ring; never remove it without a replacement */
+.btn:focus-visible,
+.input:focus-visible,
+.item:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Text inputs and selects: pill shape to match the buttons */
+.input {
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 8px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text-1);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.input::placeholder {
+  color: var(--color-text-2);
+}
+
+.errorText {
+  margin: 0 0 var(--space-1);
+  color: var(--color-error);
+  font-size: 14px;
+}
+
 /* Page content sits beside the fixed sidebar */
 .container {
   box-sizing: border-box;
@@ -175,6 +223,682 @@ h2,
   font-family: var(--font-heading);
   font-size: var(--text-body);
   line-height: 1;
+}
+
+.footer {
+  padding-top: var(--space-3);
+  text-align: center;
+  font-size: var(--text-label);
+  color: var(--color-text-2);
+}
+
+/* Screen title on the left, search or actions on the right */
+.pageHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.pageHeader h1,
+.pageHeader p {
+  margin: 0;
+}
+
+.headerActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.saveStatus {
+  font-size: 14px;
+}
+
+/* Recipes screen: search box, cuisine filter and sort dropdown side by side */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex: 0 1 680px;
+}
+
+.search {
+  position: relative;
+  flex: 1 1 auto;
+}
+
+.sortSelect {
+  flex: none;
+  cursor: pointer;
+}
+
+.search .input {
+  width: 100%;
+  padding-right: 40px;
+}
+
+.searchIcon {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  width: 18px;
+  height: 18px;
+  transform: translateY(-50%);
+  color: var(--color-text-2);
+  pointer-events: none;
+}
+
+.recipeGrid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-3);
+}
+
+.recipeCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  transition: border-color 0.15s ease;
+}
+
+.recipeCard:hover {
+  border-color: var(--color-primary);
+}
+
+.recipeCard .recipeName,
+.recipeCard .text-label {
+  margin: 0;
+}
+
+/* Recipe photo, or a placeholder when there is none */
+.recipeImage {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  background: var(--color-accent);
+}
+
+/* Wider and shorter in the details pop-up, so the ingredients stay in view */
+.recipeImageLarge {
+  aspect-ratio: 16 / 7;
+}
+
+.recipeImagePlaceholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary);
+}
+
+.recipeImagePlaceholder svg {
+  width: 36px;
+  height: 36px;
+  opacity: 0.6;
+}
+
+/* The recipe name is the button that opens the details. Its ::after covers
+   the whole card, so the card is clickable anywhere. */
+.recipeOpen {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.recipeOpen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-lg);
+}
+
+.recipeOpen:focus-visible {
+  outline: none;
+}
+
+.recipeOpen:focus-visible::after {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Buttons sit at the bottom so they line up across a row of cards, and above
+   the card-wide click area so they still work */
+.recipeActions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-top: auto;
+  padding-top: var(--space-3);
+}
+
+/* Empty space in these rows passes clicks through to the card; only the
+   buttons and dropdown inside catch them */
+.recipeActions,
+.dayPicker {
+  pointer-events: none;
+}
+
+.recipeActions > *,
+.dayPicker > * {
+  pointer-events: auto;
+}
+
+.dayPicker {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: var(--space-1);
+}
+
+.dayPicker .input {
+  flex: 1;
+}
+
+.cardMessage {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* Recipe details pop-up */
+.recipeDialog {
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text-1);
+  box-shadow: 0 20px 50px rgb(38 37 31 / 0.3);
+}
+
+.recipeDialog::backdrop {
+  background: rgb(38 37 31 / 0.5);
+}
+
+/* Keep the page behind still while the pop-up is open */
+body:has(.recipeDialog[open]) {
+  overflow: hidden;
+}
+
+.dialogBody {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+}
+
+.dialogBody .recipeName,
+.dialogBody .text-label {
+  margin: 0;
+}
+
+.dialogClose {
+  position: absolute;
+  top: calc(var(--space-3) + 12px);
+  right: calc(var(--space-3) + 12px);
+  z-index: 1;
+}
+
+.dialogHeading {
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-body);
+  font-weight: 600;
+}
+
+.detailRow {
+  display: grid;
+  grid-template-columns: 1fr auto 90px;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 14px;
+}
+
+.detailRow span:last-child {
+  text-align: right;
+}
+
+.dialogActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-1);
+  margin-top: var(--space-3);
+}
+
+/* Edit ingredients screen: form on the left, list on the right */
+.editor {
+  display: grid;
+  grid-template-columns: minmax(240px, 300px) 1fr;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.ingredientForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.ingredientForm .btn {
+  margin-top: var(--space-1);
+}
+
+.ingredientList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ingredientRow {
+  display: grid;
+  grid-template-columns: 1fr auto 90px auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 14px;
+}
+
+.ingredientRow span:nth-child(3) {
+  text-align: right;
+}
+
+.costTotal {
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-title);
+}
+
+/* Shown on Recipes when arriving from a day's Add button */
+.planningBanner {
+  margin: 0 0 var(--space-3);
+  padding: 12px var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-accent);
+  color: var(--color-primary);
+  font-size: 14px;
+}
+
+.planningBanner a {
+  color: inherit;
+  font-weight: 600;
+}
+
+/* Home: greeting and stats on the left, shopping list card on the right */
+.homeTop {
+  display: grid;
+  grid-template-columns: 1fr minmax(260px, 360px);
+  gap: var(--space-3);
+  align-items: start;
+  margin-bottom: var(--space-4);
+}
+
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--space-3);
+}
+
+.statLabel {
+  font-size: 14px;
+}
+
+.statValue {
+  font-family: var(--font-heading);
+  font-size: 28px;
+  line-height: 1.2;
+  color: var(--color-primary);
+}
+
+.statNote {
+  font-size: var(--text-label);
+}
+
+.shoppingPreview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-height: 150px;
+  background: var(--color-accent);
+  border-color: transparent;
+  color: var(--color-text-1);
+  text-decoration: none;
+  transition: border-color 0.15s ease;
+}
+
+.shoppingPreview:hover {
+  border-color: var(--color-primary);
+}
+
+.shoppingPreview:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.shoppingPreviewHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--color-primary);
+}
+
+.shoppingPreviewItems {
+  font-size: 14px;
+}
+
+/* "—— This week's meals ——" */
+.dividerHeading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0;
+  font-size: var(--text-title);
+}
+
+.dividerHeading::before,
+.dividerHeading::after {
+  content: "";
+  flex: 1;
+  border-top: 1px solid var(--color-text-2);
+}
+
+.weekRange {
+  margin: 4px 0 var(--space-3);
+  text-align: center;
+  font-size: 14px;
+}
+
+.weekGrid {
+  list-style: none;
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.dayColumn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-height: 200px;
+  padding: 12px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+
+.dayToday {
+  border-color: var(--color-primary);
+}
+
+.dayHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.dayDate {
+  font-size: 11px;
+  color: var(--color-text-2);
+}
+
+.dayMeals {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dayMeal {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 26px 8px 10px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.dayMealName {
+  color: var(--color-text-1);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.dayMealName:hover {
+  text-decoration: underline;
+}
+
+.dayMealCost {
+  font-size: 11px;
+}
+
+.dayMealRemove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  padding: 3px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--color-text-2);
+  cursor: pointer;
+}
+
+.dayMealRemove:hover {
+  background: var(--color-accent);
+  color: var(--color-primary);
+}
+
+.dayMealRemove:focus-visible,
+.dayMealName:focus-visible,
+.suggestion:focus-visible,
+.browseAll:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Add sits at the bottom of the column */
+.dayAdd {
+  margin-top: auto;
+  align-self: stretch;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.sectionHeader h2 {
+  margin: 0;
+}
+
+.browseAll {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-1);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.browseAll:hover {
+  text-decoration: underline;
+}
+
+.suggestionGrid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.suggestion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  color: var(--color-text-1);
+  font-size: 14px;
+  text-align: center;
+  text-decoration: none;
+}
+
+.suggestion:hover span {
+  text-decoration: underline;
+}
+
+/* Grocery list */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+
+.emptyState p {
+  margin: 0;
+}
+
+.emptyState .btn {
+  margin-top: var(--space-1);
+}
+
+/* Two columns of categories. CSS columns rather than a grid, so a long
+   Pantry group sits beside several shorter ones instead of leaving gaps.
+   "320px 2" means: at most 2 columns, each at least 320px wide, so narrow
+   screens drop to one column by themselves. */
+.groceryGroups {
+  columns: 320px 2;
+  column-gap: var(--space-4);
+}
+
+/* Each category is a white card (--color-surface from :root), kept whole in
+   one column */
+.groceryGroup {
+  break-inside: avoid;
+  margin-bottom: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+/* The card's edge already closes the list, so the last row needs no line */
+.groceryGroup .groceryItem:last-child {
+  border-bottom: 0;
+}
+
+.groceryCategory {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-body);
+  font-weight: 600;
+}
+
+.groceryList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.groceryItem {
+  display: grid;
+  grid-template-columns: 1fr auto 90px;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 14px;
+}
+
+.groceryLabel {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.groceryLabel input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 2px 0 0;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.groceryName,
+.groceryFor {
+  display: block;
+}
+
+.groceryFor {
+  font-size: var(--text-label);
+}
+
+.groceryCost {
+  text-align: right;
+}
+
+/* Ticked: struck through and faded, still readable */
+.groceryItem.isChecked .groceryName,
+.groceryItem.isChecked .groceryQty,
+.groceryItem.isChecked .groceryCost {
+  text-decoration: line-through;
+  color: var(--color-text-2);
+}
+
+.grocerySummary {
+  margin-top: var(--space-4);
+}
+
+.grocerySummary p {
+  margin: 0 0 4px;
+}
+
+/* Tablets and small laptops: the week wraps onto two rows */
+@media (max-width: 1100px) {
+  .homeTop {
+    grid-template-columns: 1fr;
+  }
+
+  .weekGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 /* Desktop: fixed left rail. The green panel is drawn by ::before so its
@@ -284,6 +1008,83 @@ h2,
 
   .brandTagline {
     font-size: var(--text-label);
+  }
+
+  /* Search on its own line, the two dropdowns sharing the line under it */
+  .toolbar {
+    flex-basis: 100%;
+    flex-wrap: wrap;
+  }
+
+  .search {
+    flex-basis: 100%;
+  }
+
+  .sortSelect {
+    flex: 1 1 0;
+  }
+
+  .recipeGrid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Form stacks above the list */
+  .editor {
+    grid-template-columns: 1fr;
+  }
+
+  .ingredientRow {
+    grid-template-columns: 1fr auto auto;
+    gap: var(--space-1);
+  }
+
+  /* Name on its own line, then quantity, cost and Remove */
+  .ingredientRow span:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .ingredientRow span:nth-child(3) {
+    text-align: left;
+  }
+
+  .detailRow {
+    grid-template-columns: 1fr auto;
+    gap: var(--space-1);
+  }
+
+  .detailRow span:first-child {
+    grid-column: 1 / -1;
+  }
+
+  /* Home: stats stack, each day becomes a full-width row */
+  .statGrid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .weekGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .dayColumn {
+    min-height: 0;
+  }
+
+  .suggestionGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .groceryItem {
+    grid-template-columns: 1fr auto;
+    gap: 4px var(--space-1);
+  }
+
+  .groceryLabel {
+    grid-column: 1 / -1;
+  }
+
+  .groceryQty {
+    padding-left: 30px;
   }
 
   .sidebar {

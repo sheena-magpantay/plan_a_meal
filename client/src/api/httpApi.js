@@ -26,15 +26,30 @@ async function request(path, options) {
   return response.status === 204 ? null : response.json()
 }
 
-export const listSightings = () => request('/api/sightings')
+export const listRecipes = () => request('/api/recipes')
 
-export const getSighting = (id) => request(`/api/sightings/${id}`)
+export const getRecipe = (id) => request(`/api/recipes/${id}`)
 
-export const createSighting = (input) =>
-  request('/api/sightings', { method: 'POST', body: JSON.stringify(input) })
+export const updateRecipeIngredients = (id, ingredients) =>
+  request(`/api/recipes/${id}/ingredients`, {
+    method: 'PUT',
+    body: JSON.stringify({ ingredients }),
+  })
 
-export const updateSighting = (id, input) =>
-  request(`/api/sightings/${id}`, { method: 'PUT', body: JSON.stringify(input) })
+// weekStart is that week's Monday as YYYY-MM-DD (see src/week.js).
+export const listMealPlan = (weekStart) =>
+  request(`/api/meal-plan?week=${encodeURIComponent(weekStart)}`)
 
-export const deleteSighting = (id) =>
-  request(`/api/sightings/${id}`, { method: 'DELETE' })
+// entry: { recipe_id, day, week_start }
+export const addToMealPlan = (entry) =>
+  request('/api/meal-plan', { method: 'POST', body: JSON.stringify(entry) })
+
+export const removeFromMealPlan = (id) =>
+  request(`/api/meal-plan/${id}`, { method: 'DELETE' })
+
+export const getShoppingList = (weekStart) =>
+  request(`/api/shopping-list?week=${encodeURIComponent(weekStart)}`)
+
+// check: { week_start, item_key, checked }
+export const setShoppingItemChecked = (check) =>
+  request('/api/shopping-list/checks', { method: 'PUT', body: JSON.stringify(check) })

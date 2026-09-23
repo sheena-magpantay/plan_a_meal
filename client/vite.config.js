@@ -15,5 +15,10 @@ export default defineConfig({
     proxy: {
       '/api': 'http://localhost:3000',
     },
+    // The dev server only serves files inside client/ by default. Demo mode
+    // reads the recipe list from server/db/recipes.js, so allow that one folder.
+    fs: {
+      allow: ['.', '../server/db'],
+    },
   },
 })

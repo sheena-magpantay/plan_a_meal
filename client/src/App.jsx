@@ -23,6 +23,7 @@ export default function App() {
             <Route path="/profile" element={<p>Profile</p>} />
           </Routes>
         </main>
+        <footer className="footer">© 2026 Plan A Meal. All Rights Reserved</footer>
       </div>
     </>
   );
