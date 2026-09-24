@@ -311,6 +311,7 @@ h2,
 
 .recipeCard:hover {
   border-color: var(--color-primary);
+  border-width: thick;
 }
 
 .recipeCard .recipeName,
@@ -654,6 +655,7 @@ body:has(.recipeDialog[open]) {
 
 .dayToday {
   border-color: var(--color-primary);
+  border-width: thick;
 }
 
 .dayHeader {

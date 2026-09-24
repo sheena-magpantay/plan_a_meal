@@ -10,7 +10,9 @@ import { costToBuy } from "../shopping.js";
 function groupByCategory(items) {
   return CATEGORY_ORDER.map((category) => [
     category,
-    items.filter((item) => categorize(item.name) === category),
+    // Store products carry their own category; typed-in ingredients the
+    // catalog does not know are sorted by name.
+    items.filter((item) => (item.category ?? categorize(item.name)) === category),
   ]).filter(([, list]) => list.length > 0);
 }
 
@@ -23,7 +25,7 @@ function downloadList(items, weekStart) {
     lines.push(category.toUpperCase());
     for (const item of list) {
       const box = item.checked ? "[x]" : "[ ]";
-      lines.push(`${box} ${item.name}, ${item.quantity} ${item.unit}, ${peso.format(item.estimated_cost)}`);
+      lines.push(`${box} ${item.name}, ${item.amount}, ${peso.format(item.estimated_cost)}`);
     }
     lines.push("");
   }
@@ -150,12 +152,11 @@ export default function ShoppingList() {
                           <span className="groceryName">{item.name}</span>
                           <span className="groceryFor text-muted">
                             For {item.recipes.join(", ")}
+                            {item.uses && ` · ${item.uses}`}
                           </span>
                         </span>
                       </label>
-                      <span className="groceryQty text-muted">
-                        {item.quantity} {item.unit}
-                      </span>
+                      <span className="groceryQty text-muted">{item.amount}</span>
                       <span className="groceryCost">{peso.format(item.estimated_cost)}</span>
                     </li>
                   ))}

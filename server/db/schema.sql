@@ -59,7 +59,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS meal_plan_week_recipe_day_idx
   ON meal_plan (week_start, recipe_id, day);
 
 -- Ticked items on a week's shopping list. A row means "checked"; unticking
--- deletes it. item_key is name|unit, lowercased (see db/shoppingList.js).
+-- deletes it. item_key names the shopping list line, e.g. "product:soy sauce"
+-- (see db/shoppingList.js).
 CREATE TABLE IF NOT EXISTS shopping_checks (
   week_start DATE NOT NULL,
   item_key   TEXT NOT NULL,
