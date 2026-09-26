@@ -8,7 +8,7 @@
 // NUMERIC columns come back from pg as strings (so no precision is lost), which
 // is why quantity and cost are cast to double precision here: the client wants numbers.
 
-import { buildShoppingList } from './db/shoppingList.js'
+import { buildShoppingList, customItem } from './db/shoppingList.js'
 
 export const DAYS = [
   'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
@@ -148,7 +148,36 @@ export async function getShoppingList(pool, weekStart) {
     'SELECT item_key FROM shopping_checks WHERE week_start = $1',
     [weekStart]
   )
-  return buildShoppingList(lines.rows, checks.rows.map((row) => row.item_key))
+  const added = await pool.query(
+    `SELECT id, name, amount, estimated_cost::double precision AS estimated_cost
+     FROM shopping_items WHERE week_start = $1 ORDER BY added_at`,
+    [weekStart]
+  )
+  return buildShoppingList(lines.rows, checks.rows.map((row) => row.item_key), added.rows)
+}
+
+export async function addShoppingItem(pool, { week_start, name, amount, estimated_cost }) {
+  const { rows } = await pool.query(
+    `INSERT INTO shopping_items (week_start, name, amount, estimated_cost)
+     VALUES ($1, $2, $3, $4)
+     RETURNING id, name, amount, estimated_cost::double precision AS estimated_cost`,
+    [week_start, name, amount, estimated_cost]
+  )
+  return customItem(rows[0])
+}
+
+// Returns false when there was no such item. Its tick goes with it.
+export async function removeShoppingItem(pool, id) {
+  const { rows } = await pool.query(
+    'DELETE FROM shopping_items WHERE id = $1 RETURNING week_start',
+    [id]
+  )
+  if (rows.length === 0) return false
+  await pool.query(
+    'DELETE FROM shopping_checks WHERE week_start = $1 AND item_key = $2',
+    [rows[0].week_start, `custom:${id}`]
+  )
+  return true
 }
 
 export async function setShoppingItemChecked(pool, { week_start, item_key, checked }) {

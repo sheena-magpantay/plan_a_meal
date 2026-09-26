@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Plus, X } from "lucide-react";
 import { listMealPlan, removeFromMealPlan, getShoppingList, listRecipes } from "../api/index.js";
 import RecipeImage from "../components/RecipeImage.jsx";
+import { useAuth, displayName } from "../auth.jsx";
 import { peso } from "../format.js";
 import { costToBuy } from "../shopping.js";
 import {
@@ -35,6 +36,7 @@ function averageDailyCalories(plan) {
 }
 
 export default function Home() {
+  const { user } = useAuth();
   // Fixed for as long as the page is open; a reload after Monday picks up the
   // new week, which starts empty.
   const [weekStart] = useState(currentWeekStart);
@@ -106,7 +108,7 @@ export default function Home() {
     <section className="home">
       <div className="homeTop">
         <div>
-          <h1>Hello!</h1>
+          <h1>{user ? `Hello, ${displayName(user)}!` : "Hello!"}</h1>
           <div className="statGrid">
             <Stat
               label="Budget this week"

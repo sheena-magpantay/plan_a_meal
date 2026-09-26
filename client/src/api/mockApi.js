@@ -12,7 +12,7 @@
 // mode and the real API start from identical data. Ids are 1 to 40 in list
 // order, which is also what the seeded database gives them.
 import starterRecipes from '../../../server/db/recipes.js'
-import { buildShoppingList } from '../../../server/db/shoppingList.js'
+import { buildShoppingList, customItem } from '../../../server/db/shoppingList.js'
 
 const KEY = 'plan-a-meal:data'
 
@@ -38,8 +38,10 @@ function seed() {
     })),
     mealPlan: [],
     shoppingChecks: {},
+    shoppingItems: [],
     nextIngredientId,
     nextMealPlanId: 1,
+    nextShoppingItemId: 1,
   }
 }
 
@@ -176,7 +178,40 @@ export async function getShoppingList(weekStart) {
     const recipe = findRecipe(data, entry.recipe_id)
     return recipe.ingredients.map((ingredient) => ({ ...ingredient, recipe_name: recipe.name }))
   })
-  return buildShoppingList(lines, data.shoppingChecks?.[weekStart] ?? [])
+  const added = (data.shoppingItems ?? []).filter((item) => item.week_start === weekStart)
+  return buildShoppingList(lines, data.shoppingChecks?.[weekStart] ?? [], added)
+}
+
+// item: { week_start, name, amount, estimated_cost }. Returns the new list line.
+export async function addShoppingItem({ week_start, name, amount, estimated_cost }) {
+  await delay()
+  const data = read()
+  if (!name?.trim()) throw new Error('name is required')
+  data.shoppingItems ??= []
+  data.nextShoppingItemId ??= 1
+  const row = {
+    id: data.nextShoppingItemId++,
+    week_start,
+    name: name.trim(),
+    amount: (amount ?? '').trim(),
+    estimated_cost: Number(estimated_cost) || 0,
+  }
+  data.shoppingItems.push(row)
+  write(data)
+  return customItem(row)
+}
+
+export async function removeShoppingItem(id) {
+  await delay()
+  const data = read()
+  const row = (data.shoppingItems ?? []).find((item) => String(item.id) === String(id))
+  if (!row) throw new Error('Not found')
+  data.shoppingItems = data.shoppingItems.filter((item) => item !== row)
+  // Its tick, if it had one, would otherwise stay behind.
+  const checks = data.shoppingChecks?.[row.week_start]
+  if (checks) data.shoppingChecks[row.week_start] = checks.filter((key) => key !== `custom:${id}`)
+  write(data)
+  return null
 }
 
 export async function setShoppingItemChecked({ week_start, item_key, checked }) {

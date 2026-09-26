@@ -118,9 +118,31 @@ function purchase(product, need) {
   }
 }
 
+// An item the user added to the list themselves ("Add an item" on the Grocery
+// List), not from a recipe. It is never merged with recipe lines: it is shown
+// exactly as typed. Its key is "custom:<id>", so ticking it goes through the
+// same shopping_checks table as every other line.
+// row: { id, name, amount, estimated_cost }
+export function customItem(row, checkedKeys = []) {
+  const key = `custom:${row.id}`
+  return {
+    key,
+    id: row.id,
+    custom: true,
+    name: row.name,
+    category: null,
+    amount: row.amount ?? '',
+    uses: '',
+    estimated_cost: round(Number(row.estimated_cost) || 0),
+    recipes: [],
+    checked: checkedKeys.includes(key),
+  }
+}
+
 // lines: [{ name, quantity, unit, estimated_cost, recipe_name }]
 // checkedKeys: the item keys ticked for this week
-export function buildShoppingList(lines, checkedKeys) {
+// customRows: the week's added items, see customItem above
+export function buildShoppingList(lines, checkedKeys, customRows = []) {
   const groups = new Map()
 
   const addTo = (key, start, line, amount) => {
@@ -167,5 +189,6 @@ export function buildShoppingList(lines, checkedKeys) {
         checked: checked.has(key),
       }
     })
+    .concat(customRows.map((row) => customItem(row, checkedKeys)))
     .sort((a, b) => a.name.localeCompare(b.name))
 }

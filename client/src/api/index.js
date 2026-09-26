@@ -3,6 +3,7 @@
 // Swapping the simulated backend for your real API is one environment variable,
 // set at BUILD time. Nothing in src/components or src/pages changes.
 //
+//   VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY set -> Supabase, with accounts
 //   VITE_USE_MOCK_API=false  -> your Express API at VITE_API_BASE_URL
 //   anything else, INCLUDING UNSET -> the browser-only fake
 //
@@ -23,10 +24,16 @@
 
 import * as mockApi from './mockApi.js'
 import * as httpApi from './httpApi.js'
+import * as supabaseApi from './supabaseApi.js'
+import { SUPABASE_ENABLED } from '../supabase.js'
 
-export const USING_MOCK_API = import.meta.env.VITE_USE_MOCK_API !== 'false'
+// Supabase comes first: once VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are
+// set, visitors log in and each account's week is saved to Supabase, whatever
+// VITE_USE_MOCK_API says. See supabase/schema.sql.
+export const USING_SUPABASE = SUPABASE_ENABLED
+export const USING_MOCK_API = !USING_SUPABASE && import.meta.env.VITE_USE_MOCK_API !== 'false'
 
-const implementation = USING_MOCK_API ? mockApi : httpApi
+const implementation = USING_SUPABASE ? supabaseApi : USING_MOCK_API ? mockApi : httpApi
 
 export const {
   listRecipes,
@@ -37,4 +44,6 @@ export const {
   removeFromMealPlan,
   getShoppingList,
   setShoppingItemChecked,
+  addShoppingItem,
+  removeShoppingItem,
 } = implementation

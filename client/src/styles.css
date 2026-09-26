@@ -839,7 +839,8 @@ body:has(.recipeDialog[open]) {
 
 .groceryItem {
   display: grid;
-  grid-template-columns: 1fr auto 90px;
+  /* name, amount, cost, remove (empty for items that came from a recipe) */
+  grid-template-columns: 1fr auto 90px 28px;
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-1) 0;
@@ -884,12 +885,225 @@ body:has(.recipeDialog[open]) {
   color: var(--color-text-2);
 }
 
+.groceryRemove {
+  display: flex;
+  justify-self: end;
+  padding: 4px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--color-text-2);
+  cursor: pointer;
+}
+
+.groceryRemove:hover {
+  background: var(--color-accent);
+  color: var(--color-primary);
+}
+
+.groceryRemove:focus-visible,
+.filterTab:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Add an item: name takes the spare width, then amount, cost and Add */
+.addItemForm {
+  display: grid;
+  grid-template-columns: 1fr minmax(120px, 180px) minmax(90px, 120px) auto;
+  gap: var(--space-1);
+  align-items: center;
+  margin-bottom: var(--space-3);
+  padding: 12px;
+}
+
+.addItemError {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+/* All / To buy / Checked */
+.filterTabs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: var(--space-3);
+  padding: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+}
+
+.filterTab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--color-primary);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.filterTab.isActive {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.filterCount {
+  font-size: var(--text-label);
+  opacity: 0.75;
+}
+
 .grocerySummary {
   margin-top: var(--space-4);
 }
 
 .grocerySummary p {
   margin: 0 0 4px;
+}
+
+/* Login and sign up: one centred column on the page background, no sidebar.
+   Order follows the wireframe: logo, title, fields, button, switch link, OR,
+   Continue with Google. */
+.authPage {
+  box-sizing: border-box;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3) 16px;
+}
+
+.authCard {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-4) var(--space-3);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-light);
+  text-align: center;
+}
+
+.authLogo {
+  width: 110px;
+  height: 110px;
+  object-fit: contain;
+}
+
+.authTitle {
+  margin: var(--space-1) 0 var(--space-3);
+  font-size: 30px;
+  color: var(--color-primary);
+}
+
+.authForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+}
+
+.authForm .errorText {
+  margin: 0;
+}
+
+.authSubmit {
+  width: 100%;
+  margin-top: var(--space-1);
+}
+
+.authSwitch {
+  margin: var(--space-3) 0 0;
+  font-size: 14px;
+}
+
+.authSwitch a {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.authSwitch a:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* "———— OR ————" */
+.authDivider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin: var(--space-1) 0 12px;
+  font-size: var(--text-label);
+  color: var(--color-text-2);
+}
+
+.authDivider::before,
+.authDivider::after {
+  content: "";
+  flex: 1;
+  border-top: 1px solid var(--color-border);
+}
+
+.authGoogle {
+  width: 100%;
+  gap: 12px;
+}
+
+.googleIcon {
+  width: 18px;
+  height: 18px;
+}
+
+.authNote {
+  margin: 0 0 var(--space-3);
+  font-size: 14px;
+}
+
+.authSentIcon {
+  width: 56px;
+  height: 56px;
+  color: var(--color-primary);
+}
+
+/* While the saved session is read, before deciding login page or app */
+.authLoading {
+  padding: var(--space-4);
+  text-align: center;
+}
+
+.profileCard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  max-width: 520px;
+}
+
+.profileDetails {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  gap: 12px var(--space-3);
+  margin: 0;
+}
+
+.profileDetails dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.profileNote {
+  margin: 0;
+  font-size: 14px;
 }
 
 /* Tablets and small laptops: the week wraps onto two rows */
@@ -1077,8 +1291,18 @@ body:has(.recipeDialog[open]) {
   }
 
   .groceryItem {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 1fr auto 28px;
     gap: 4px var(--space-1);
+  }
+
+  /* Name on its own line, then amount and cost, then Add */
+  .addItemForm {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .addItemName,
+  .addItemForm .btn {
+    grid-column: 1 / -1;
   }
 
   .groceryLabel {

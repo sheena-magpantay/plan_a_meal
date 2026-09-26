@@ -53,3 +53,10 @@ export const getShoppingList = (weekStart) =>
 // check: { week_start, item_key, checked }
 export const setShoppingItemChecked = (check) =>
   request('/api/shopping-list/checks', { method: 'PUT', body: JSON.stringify(check) })
+
+// item: { week_start, name, amount, estimated_cost }
+export const addShoppingItem = (item) =>
+  request('/api/shopping-list/items', { method: 'POST', body: JSON.stringify(item) })
+
+export const removeShoppingItem = (id) =>
+  request(`/api/shopping-list/items/${id}`, { method: 'DELETE' })

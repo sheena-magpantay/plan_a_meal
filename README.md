@@ -92,6 +92,40 @@ Check the API on its own before you blame the client:
     curl http://localhost:3000/readyz      # is the database reachable
     curl http://localhost:3000/api/sightings
 
+## Accounts (Supabase)
+
+With Supabase configured, visitors must log in (username or email and a
+password, or Google) and each account's weekly plan, shopping list ticks and
+ingredient edits are saved to Supabase. Recipes stay bundled with the client
+from `server/db/recipes.js`. Without Supabase configured, the app runs as
+before with no login.
+
+One-time setup:
+
+1. **Tables.** Supabase dashboard > SQL Editor > New query: paste all of
+   `supabase/schema.sql` and Run. It creates the tables, the Row Level Security
+   policies that keep each user's rows private, and the sign-up trigger.
+2. **Keys.** In `client/.env` set `VITE_SUPABASE_URL` and
+   `VITE_SUPABASE_ANON_KEY` (Project Settings > API: the project URL and the
+   *publishable* key, never the secret one).
+3. **Redirect URLs.** Authentication > URL Configuration: set Site URL to your
+   live site, and add `http://localhost:5173/` and
+   `https://<username>.github.io/<repo>/` under Redirect URLs.
+4. **Google.** In Google Cloud Console > APIs & Services > Credentials, the
+   OAuth client (type: Web application) needs
+   `https://<project-ref>.supabase.co/auth/v1/callback` as an authorised
+   redirect URI. Then in Supabase > Authentication > Sign In / Providers >
+   Google, turn it on and paste that client's ID and secret. The client secret
+   belongs only in the Supabase dashboard, never in this repository.
+5. **Deploying.** Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` as
+   repository variables (Settings > Secrets and variables > Actions >
+   Variables) so the Pages build includes them.
+
+Email sign-up sends a confirmation link by default (Authentication > Sign In /
+Providers > Email > Confirm email). The login form accepts a username by looking
+up its email with `email_for_username` in `schema.sql`; the trade-off is noted
+there.
+
 ## Environment variables
 
 None of these are committed. `.env.example` in each folder lists them with
@@ -105,6 +139,8 @@ placeholder values.
 | `PORT` | server | **set by the host**, do not set it yourself |
 | `VITE_USE_MOCK_API` | client, at build time | only `false` turns demo mode off; unset means on |
 | `VITE_API_BASE_URL` | client, at build time | your API's public URL, no trailing slash |
+| `VITE_SUPABASE_URL` | client, at build time | Supabase project URL; with the key below, turns on accounts |
+| `VITE_SUPABASE_ANON_KEY` | client, at build time | Supabase **publishable** key, public by design (RLS protects the data) |
 
 Every `VITE_` value is compiled into the built JavaScript and is **public**.
 Never put a key, a password or a connection string in one.
@@ -131,10 +167,11 @@ once against the hosted database.
 ## Project structure
 
     client/          React front end, built by Vite
-      src/api/       ONE interface, two implementations, chosen by a variable
+      src/api/       ONE interface, three implementations (demo, Express, Supabase)
       src/components/
     server/          Express API
       db/            pool, schema.sql, seed.sql, and a runner for them
+    supabase/        schema.sql for accounts and saved weeks on Supabase
     compose.yml      only if you self-host
     docs/            your planning documents and weekly reports
 

@@ -66,3 +66,17 @@ CREATE TABLE IF NOT EXISTS shopping_checks (
   item_key   TEXT NOT NULL,
   PRIMARY KEY (week_start, item_key)
 );
+
+-- Items added to a week's shopping list by hand, not from a recipe. amount is
+-- free text as typed, e.g. "2 packs". Ticking one stores "custom:<id>" in
+-- shopping_checks, like any other line.
+CREATE TABLE IF NOT EXISTS shopping_items (
+  id             SERIAL        PRIMARY KEY,
+  week_start     DATE          NOT NULL,
+  name           TEXT          NOT NULL CHECK (length(name) BETWEEN 1 AND 120),
+  amount         TEXT          NOT NULL DEFAULT '' CHECK (length(amount) <= 40),
+  estimated_cost NUMERIC(10,2) NOT NULL DEFAULT 0 CHECK (estimated_cost >= 0),
+  added_at       TIMESTAMPTZ   NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS shopping_items_week_idx ON shopping_items (week_start);

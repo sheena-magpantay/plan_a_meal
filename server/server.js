@@ -113,6 +113,24 @@ function validateCheck(body) {
   return { errors, value: { week_start, item_key, checked: body.checked } }
 }
 
+function validateShoppingItem(body) {
+  const errors = []
+  const week_start = parseWeek(body.week_start)
+  const name = typeof body.name === 'string' ? body.name.trim() : ''
+  const amount = typeof body.amount === 'string' ? body.amount.trim() : ''
+  const cost = body.estimated_cost === undefined || body.estimated_cost === '' ? 0 : Number(body.estimated_cost)
+
+  if (!week_start) errors.push(WEEK_ERROR)
+  if (!name) errors.push('name is required')
+  if (name.length > 120) errors.push('name must be 120 characters or fewer')
+  if (amount.length > 40) errors.push('amount must be 40 characters or fewer')
+  if (!Number.isFinite(cost) || cost < 0 || cost > 1000000) {
+    errors.push('estimated cost must be a number, 0 or more')
+  }
+
+  return { errors, value: { week_start, name, amount, estimated_cost: cost } }
+}
+
 app.get('/api/recipes', async (request, response, next) => {
   try {
     response.json(await recipes.listRecipes(pool))
@@ -207,6 +225,31 @@ app.put('/api/shopping-list/checks', async (request, response, next) => {
 
   try {
     response.json(await recipes.setShoppingItemChecked(pool, value))
+  } catch (error) {
+    next(error)
+  }
+})
+
+// Add something to the list by hand: { week_start, name, amount, estimated_cost }
+app.post('/api/shopping-list/items', async (request, response, next) => {
+  const { errors, value } = validateShoppingItem(request.body ?? {})
+  if (errors.length > 0) return response.status(400).json({ error: errors.join('; ') })
+
+  try {
+    response.status(201).json(await recipes.addShoppingItem(pool, value))
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.delete('/api/shopping-list/items/:id', async (request, response, next) => {
+  const id = parseId(request.params.id)
+  if (!id) return response.status(404).json({ error: 'Not found' })
+
+  try {
+    const removed = await recipes.removeShoppingItem(pool, id)
+    if (!removed) return response.status(404).json({ error: 'Not found' })
+    response.status(204).end()
   } catch (error) {
     next(error)
   }
