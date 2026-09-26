@@ -31,6 +31,7 @@ function seed() {
       name: recipe.name,
       cuisine: recipe.cuisine,
       minutes: recipe.minutes,
+      servings: recipe.servings ?? 4,
       ingredients: recipe.ingredients.map((ingredient) => ({
         id: nextIngredientId++,
         ...ingredient,
@@ -72,7 +73,8 @@ function findRecipe(data, id) {
 // Image and calories are read from server/db/recipes.js every time rather than
 // from storage, so editing them there shows up on the next reload without
 // clearing the saved demo data.
-const withStatic = (recipe) => ({
+// Recipes added on the Recipes screen (custom) keep their own image and calories.
+const withStatic = (recipe) => recipe.custom ? recipe : ({
   ...recipe,
   image: starterRecipes[recipe.id - 1]?.image ?? '',
   calories: starterRecipes[recipe.id - 1]?.calories ?? 0,
@@ -90,15 +92,19 @@ export async function listRecipes() {
   }))
 }
 
+// Saved data from before servings existed has none: those recipes serve 4.
 export async function getRecipe(id) {
   await delay()
-  return withStatic(findRecipe(read(), id))
+  const recipe = withStatic(findRecipe(read(), id))
+  return { ...recipe, servings: recipe.servings ?? 4 }
 }
 
-export async function updateRecipeIngredients(id, ingredients) {
+// servings: how many people these amounts are for (optional, kept if left out)
+export async function updateRecipeIngredients(id, ingredients, servings) {
   await delay()
   const data = read()
   const recipe = findRecipe(data, id)
+  if (servings) recipe.servings = servings
   recipe.ingredients = ingredients.map((ingredient) => ({
     id: data.nextIngredientId++,
     name: ingredient.name,
@@ -131,6 +137,39 @@ export async function listMealPlan(weekStart) {
       }
     })
     .sort((a, b) => DAYS.indexOf(a.day) - DAYS.indexOf(b.day))
+}
+
+// recipe: { name, cuisine, minutes, calories, image }. Starts with no
+// ingredients; the edit screen fills them in.
+export async function createRecipe({ name, cuisine, minutes, calories, image }) {
+  await delay()
+  const data = read()
+  if (!name?.trim()) throw new Error('name is required')
+  const recipe = {
+    id: Math.max(0, ...data.recipes.map((row) => row.id)) + 1,
+    name: name.trim(),
+    cuisine,
+    minutes: Number(minutes),
+    image: (image ?? '').trim(),
+    calories: Number(calories) || 0,
+    custom: true,
+    ingredients: [],
+  }
+  data.recipes.push(recipe)
+  write(data)
+  return recipe
+}
+
+// Only recipes added on the Recipes screen can be deleted. It leaves the plan too.
+export async function deleteRecipe(id) {
+  await delay()
+  const data = read()
+  const recipe = findRecipe(data, id)
+  if (!recipe.custom) throw new Error('Only recipes you added can be deleted')
+  data.recipes = data.recipes.filter((row) => row !== recipe)
+  data.mealPlan = data.mealPlan.filter((entry) => entry.recipe_id !== recipe.id)
+  write(data)
+  return null
 }
 
 export async function addToMealPlan({ recipe_id, day, week_start }) {
@@ -179,11 +218,34 @@ export async function getShoppingList(weekStart) {
     return recipe.ingredients.map((ingredient) => ({ ...ingredient, recipe_name: recipe.name }))
   })
   const added = (data.shoppingItems ?? []).filter((item) => item.week_start === weekStart)
-  return buildShoppingList(lines, data.shoppingChecks?.[weekStart] ?? [], added)
+  return buildShoppingList(
+    lines,
+    data.shoppingChecks?.[weekStart] ?? [],
+    added,
+    data.shoppingQuantities?.[weekStart] ?? {}
+  )
 }
 
-// item: { week_start, name, amount, estimated_cost }. Returns the new list line.
-export async function addShoppingItem({ week_start, name, amount, estimated_cost }) {
+// quantity is in the line's buying unit; null goes back to the suggestion.
+export async function setShoppingItemQuantity({ week_start, item_key, quantity }) {
+  await delay()
+  const data = read()
+  data.shoppingQuantities ??= {}
+  const week = { ...(data.shoppingQuantities[week_start] ?? {}) }
+  if (quantity == null) delete week[item_key]
+  else {
+    if (!(Number(quantity) > 0)) throw new Error('quantity must be above 0')
+    week[item_key] = Number(quantity)
+  }
+  data.shoppingQuantities[week_start] = week
+  write(data)
+  return { week_start, item_key, quantity }
+}
+
+// item: { week_start, name, quantity, unit }. Returns the new list line.
+// Priced from the store catalog; demo mode has no AI, so an item the catalog
+// does not know has no price.
+export async function addShoppingItem({ week_start, name, quantity, unit }) {
   await delay()
   const data = read()
   if (!name?.trim()) throw new Error('name is required')
@@ -193,8 +255,9 @@ export async function addShoppingItem({ week_start, name, amount, estimated_cost
     id: data.nextShoppingItemId++,
     week_start,
     name: name.trim(),
-    amount: (amount ?? '').trim(),
-    estimated_cost: Number(estimated_cost) || 0,
+    quantity: Number(quantity) > 0 ? Number(quantity) : 1,
+    unit: (unit ?? '').trim(),
+    estimated_cost: 0,
   }
   data.shoppingItems.push(row)
   write(data)

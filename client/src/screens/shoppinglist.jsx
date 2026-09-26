@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Download, Plus, X } from "lucide-react";
+import { Download, Plus, Minus, X } from "lucide-react";
 import {
   getShoppingList,
   setShoppingItemChecked,
+  setShoppingItemQuantity,
   addShoppingItem,
   removeShoppingItem,
 } from "../api/index.js";
@@ -24,7 +25,10 @@ const FILTERS = {
   checked: { label: "Checked", test: (item) => item.checked, empty: "Nothing checked yet." },
 };
 
-const EMPTY_ITEM = { name: "", amount: "", estimated_cost: "" };
+const EMPTY_ITEM = { name: "", quantity: "", unit: "" };
+
+// Suggestions for the unit box; any other unit can be typed.
+const UNITS = ["pc", "pack", "bottle", "can", "sachet", "bundle", "dozen", "kg", "g", "L", "ml", "bunch", "head"];
 
 const byName = (a, b) => a.name.localeCompare(b.name);
 
@@ -70,6 +74,7 @@ export default function ShoppingList() {
   const [saveError, setSaveError] = useState("");
   const [filter, setFilter] = useState("all");
   const [removingKey, setRemovingKey] = useState(null);
+  const [savingKey, setSavingKey] = useState(null); // item whose quantity is saving
 
   useEffect(() => {
     let cancelled = false;
@@ -105,6 +110,22 @@ export default function ShoppingList() {
     } catch (err) {
       setChecked(!checked);
       setSaveError(`Couldn't save that: ${err.message}`);
+    }
+  }
+
+  // quantity is in the item's buying unit; null goes back to the suggestion.
+  // The whole list is reloaded after, because the cost is worked out from the
+  // store prices on the server side of the API (server/db/shoppingList.js).
+  async function changeQuantity(item, quantity) {
+    setSavingKey(item.key);
+    setSaveError("");
+    try {
+      await setShoppingItemQuantity({ week_start: weekStart, item_key: item.key, quantity });
+      setItems(await getShoppingList(weekStart));
+    } catch (err) {
+      setSaveError(`Couldn't change ${item.name}: ${err.message}`);
+    } finally {
+      setSavingKey(null);
     }
   }
 
@@ -218,14 +239,35 @@ export default function ShoppingList() {
                         />
                         <span>
                           <span className="groceryName">{item.name}</span>
-                          <span className="groceryFor text-muted">
-                            {item.custom ? "Added by you" : `For ${item.recipes.join(", ")}`}
-                            {item.uses && ` · ${item.uses}`}
-                          </span>
+                          {/* A ticked item is done: only its crossed-out name stays. */}
+                          {!item.checked && (
+                            <span className="groceryFor text-muted">
+                              {item.custom ? "Added by you" : `For ${item.recipes.join(", ")}`}
+                              {item.uses && ` · ${item.uses}`}
+                            </span>
+                          )}
                         </span>
                       </label>
-                      <span className="groceryQty text-muted">{item.amount}</span>
-                      <span className="groceryCost">{peso.format(item.estimated_cost)}</span>
+                      {!item.checked && (
+                        <>
+                          <span className="groceryQty">
+                            <QuantityEditor
+                              item={item}
+                              saving={savingKey === item.key}
+                              onChange={(quantity) => changeQuantity(item, quantity)}
+                            />
+                          </span>
+                          <span className="groceryCost">
+                            {item.priced === false ? (
+                              <span className="text-muted" title="No price estimate for this item">
+                                —
+                              </span>
+                            ) : (
+                              peso.format(item.estimated_cost)
+                            )}
+                          </span>
+                        </>
+                      )}
                       {/* Only items added by hand can be removed; recipe items
                           leave when their recipe leaves the plan. */}
                       {item.custom ? (
@@ -255,6 +297,10 @@ export default function ShoppingList() {
             <p>
               Total cost: <strong>{peso.format(total)}</strong>
             </p>
+            <p className="text-muted priceNote">
+              Costs are estimates from typical Philippine supermarket and palengke prices. Change
+              an amount with − and +, or type it in.
+            </p>
           </div>
         </>
       )}
@@ -262,7 +308,8 @@ export default function ShoppingList() {
   );
 }
 
-// One row: name, amount, cost, Add. Only the name is required.
+// One row: name, quantity, unit, Add. Only the name is required; quantity
+// defaults to 1 and unit to pieces. There is no cost box: the app prices it.
 function AddItemForm({ weekStart, onAdded }) {
   const [form, setForm] = useState(EMPTY_ITEM);
   const [error, setError] = useState("");
@@ -275,19 +322,23 @@ function AddItemForm({ weekStart, onAdded }) {
   async function submit(event) {
     event.preventDefault();
     const name = form.name.trim();
-    const cost = form.estimated_cost === "" ? 0 : Number(form.estimated_cost);
+    const quantity = form.quantity === "" ? 1 : Number(form.quantity);
 
     if (!name) return setError("Enter the item's name.");
-    if (!Number.isFinite(cost) || cost < 0) return setError("Enter a cost of 0 or more.");
+    if (!Number.isFinite(quantity) || quantity <= 0 || quantity > 10000) {
+      return setError("Enter a quantity above 0.");
+    }
 
     setSaving(true);
     setError("");
     try {
+      // The cost is the app's: store prices, or an AI estimate for anything
+      // the store list does not know (see addShoppingItem in src/api).
       const item = await addShoppingItem({
         week_start: weekStart,
         name,
-        amount: form.amount.trim(),
-        estimated_cost: cost,
+        quantity,
+        unit: form.unit.trim(),
       });
       onAdded(item);
       setForm(EMPTY_ITEM);
@@ -311,26 +362,32 @@ function AddItemForm({ weekStart, onAdded }) {
       />
       <input
         className="input"
-        name="amount"
-        placeholder="Amount (e.g. 2 packs)"
-        aria-label="Amount"
-        maxLength={40}
-        value={form.amount}
+        name="quantity"
+        type="number"
+        min="0"
+        step="any"
+        placeholder="Qty"
+        aria-label="Quantity"
+        value={form.quantity}
         onChange={updateField}
       />
       <input
         className="input"
-        name="estimated_cost"
-        type="number"
-        min="0"
-        step="0.01"
-        placeholder="Cost (₱)"
-        aria-label="Estimated cost in pesos"
-        value={form.estimated_cost}
+        name="unit"
+        list="unit-options"
+        placeholder="Unit"
+        aria-label="Unit"
+        maxLength={20}
+        value={form.unit}
         onChange={updateField}
       />
+      <datalist id="unit-options">
+        {UNITS.map((unit) => (
+          <option key={unit} value={unit} />
+        ))}
+      </datalist>
       <button type="submit" className="btn btn-primary" disabled={saving}>
-        <Plus size={16} strokeWidth={2.5} aria-hidden="true" /> {saving ? "Adding…" : "Add"}
+        <Plus size={16} strokeWidth={2.5} aria-hidden="true" /> {saving ? "Pricing…" : "Add"}
       </button>
       {error && (
         <p className="errorText addItemError" role="alert">
@@ -338,5 +395,86 @@ function AddItemForm({ weekStart, onAdded }) {
         </p>
       )}
     </form>
+  );
+}
+
+// − [ 2 ] + bottles, with what that buys underneath ("2 bottles (385 ml
+// each)"). The buttons move by one step: a bottle, 6 eggs, 0.1 kg of meat.
+// A typed amount is saved on Enter or when the box loses focus.
+function QuantityEditor({ item, saving, onChange }) {
+  const [draft, setDraft] = useState(String(item.quantity));
+
+  useEffect(() => {
+    setDraft(String(item.quantity));
+  }, [item.quantity]);
+
+  const tidy = (value) => Math.round(value * 1000) / 1000;
+
+  function commit() {
+    const quantity = tidy(Number(draft));
+    if (!Number.isFinite(quantity) || quantity <= 0) return setDraft(String(item.quantity));
+    if (quantity !== item.quantity) onChange(quantity);
+  }
+
+  function stepBy(direction) {
+    const next = tidy(item.quantity + direction * item.step);
+    if (next <= 0) return;
+    setDraft(String(next));
+    onChange(next);
+  }
+
+  return (
+    <span className="qtyEditor">
+      <span className="qtyControls">
+        <button
+          type="button"
+          className="qtyBtn"
+          aria-label={`Less ${item.name}`}
+          disabled={saving || item.quantity - item.step <= 0}
+          onClick={() => stepBy(-1)}
+        >
+          <Minus size={14} strokeWidth={2.5} />
+        </button>
+        <input
+          type="number"
+          className="qtyInput"
+          aria-label={`${item.name}, amount in ${item.unit}`}
+          min={item.step}
+          step={item.step}
+          value={draft}
+          disabled={saving}
+          onChange={(event) => setDraft(event.target.value)}
+          onBlur={commit}
+          onKeyDown={(event) => event.key === "Enter" && event.currentTarget.blur()}
+        />
+        <button
+          type="button"
+          className="qtyBtn"
+          aria-label={`More ${item.name}`}
+          disabled={saving}
+          onClick={() => stepBy(1)}
+        >
+          <Plus size={14} strokeWidth={2.5} />
+        </button>
+        <span className="qtyUnit">{item.unit}</span>
+      </span>
+      <span className="qtyAmount text-muted">
+        {item.amount}
+        {item.edited && (
+          <>
+            {" · "}
+            <button
+              type="button"
+              className="linkBtn"
+              disabled={saving}
+              onClick={() => onChange(null)}
+              title={`Back to the suggested ${item.suggested_quantity} ${item.unit}`}
+            >
+              Reset
+            </button>
+          </>
+        )}
+      </span>
+    </span>
   );
 }

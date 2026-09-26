@@ -113,22 +113,60 @@ function validateCheck(body) {
   return { errors, value: { week_start, item_key, checked: body.checked } }
 }
 
+const CUISINES = ['Filipino', 'Chinese', 'Western']
+
+function validateRecipe(body) {
+  const errors = []
+  const name = typeof body.name === 'string' ? body.name.trim() : ''
+  const image = typeof body.image === 'string' ? body.image.trim() : ''
+  const minutes = Number(body.minutes)
+  const calories = body.calories === undefined || body.calories === '' ? 0 : Number(body.calories)
+
+  if (!name) errors.push('name is required')
+  if (name.length > 120) errors.push('name must be 120 characters or fewer')
+  if (!CUISINES.includes(body.cuisine)) errors.push(`cuisine must be one of ${CUISINES.join(', ')}`)
+  if (!Number.isInteger(minutes) || minutes < 1 || minutes > 1440) {
+    errors.push('minutes must be a whole number from 1 to 1440')
+  }
+  if (!Number.isInteger(calories) || calories < 0 || calories > 10000) {
+    errors.push('calories must be a whole number from 0 to 10000')
+  }
+  if (image.length > 500) errors.push('image must be 500 characters or fewer')
+
+  return { errors, value: { name, cuisine: body.cuisine, minutes, calories, image } }
+}
+
+function validateQuantity(body) {
+  const errors = []
+  const week_start = parseWeek(body.week_start)
+  const item_key = typeof body.item_key === 'string' ? body.item_key : ''
+  const quantity = body.quantity === null ? null : Number(body.quantity)
+
+  if (!week_start) errors.push(WEEK_ERROR)
+  if (!item_key || item_key.length > 200) errors.push('item_key is required')
+  if (quantity !== null && (!Number.isFinite(quantity) || quantity <= 0 || quantity > 10000)) {
+    errors.push('quantity must be a number above 0, or null to reset it')
+  }
+
+  return { errors, value: { week_start, item_key, quantity } }
+}
+
 function validateShoppingItem(body) {
   const errors = []
   const week_start = parseWeek(body.week_start)
   const name = typeof body.name === 'string' ? body.name.trim() : ''
-  const amount = typeof body.amount === 'string' ? body.amount.trim() : ''
-  const cost = body.estimated_cost === undefined || body.estimated_cost === '' ? 0 : Number(body.estimated_cost)
+  const unit = typeof body.unit === 'string' ? body.unit.trim() : ''
+  const quantity = Number(body.quantity)
 
   if (!week_start) errors.push(WEEK_ERROR)
   if (!name) errors.push('name is required')
   if (name.length > 120) errors.push('name must be 120 characters or fewer')
-  if (amount.length > 40) errors.push('amount must be 40 characters or fewer')
-  if (!Number.isFinite(cost) || cost < 0 || cost > 1000000) {
-    errors.push('estimated cost must be a number, 0 or more')
+  if (!Number.isFinite(quantity) || quantity <= 0 || quantity > 10000) {
+    errors.push('quantity must be a number above 0')
   }
+  if (unit.length > 20) errors.push('unit must be 20 characters or fewer')
 
-  return { errors, value: { week_start, name, amount, estimated_cost: cost } }
+  return { errors, value: { week_start, name, quantity, unit } }
 }
 
 app.get('/api/recipes', async (request, response, next) => {
@@ -152,15 +190,44 @@ app.get('/api/recipes/:id', async (request, response, next) => {
   }
 })
 
+app.post('/api/recipes', async (request, response, next) => {
+  const { errors, value } = validateRecipe(request.body ?? {})
+  if (errors.length > 0) return response.status(400).json({ error: errors.join('; ') })
+
+  try {
+    response.status(201).json(await recipes.createRecipe(pool, value))
+  } catch (error) {
+    next(error)
+  }
+})
+
+// Only recipes added through POST /api/recipes; the seeded ones are a 404.
+app.delete('/api/recipes/:id', async (request, response, next) => {
+  const id = parseId(request.params.id)
+  if (!id) return response.status(404).json({ error: 'Not found' })
+
+  try {
+    const removed = await recipes.deleteRecipe(pool, id)
+    if (!removed) return response.status(404).json({ error: 'Not found' })
+    response.status(204).end()
+  } catch (error) {
+    next(error)
+  }
+})
+
 app.put('/api/recipes/:id/ingredients', async (request, response, next) => {
   const id = parseId(request.params.id)
   if (!id) return response.status(404).json({ error: 'Not found' })
 
   const { errors, value } = validateIngredients(request.body ?? {})
+  const servings = request.body?.servings == null ? null : Number(request.body.servings)
+  if (servings !== null && (!Number.isInteger(servings) || servings < 1 || servings > 100)) {
+    errors.push('servings must be a whole number from 1 to 100')
+  }
   if (errors.length > 0) return response.status(400).json({ error: errors.join('; ') })
 
   try {
-    const recipe = await recipes.replaceIngredients(pool, id, value)
+    const recipe = await recipes.replaceIngredients(pool, id, value, servings)
     if (!recipe) return response.status(404).json({ error: 'Not found' })
     response.json(recipe)
   } catch (error) {
@@ -230,7 +297,19 @@ app.put('/api/shopping-list/checks', async (request, response, next) => {
   }
 })
 
-// Add something to the list by hand: { week_start, name, amount, estimated_cost }
+// Change how much of a line to buy: { week_start, item_key, quantity }
+app.put('/api/shopping-list/quantities', async (request, response, next) => {
+  const { errors, value } = validateQuantity(request.body ?? {})
+  if (errors.length > 0) return response.status(400).json({ error: errors.join('; ') })
+
+  try {
+    response.json(await recipes.setShoppingItemQuantity(pool, value))
+  } catch (error) {
+    next(error)
+  }
+})
+
+// Add something to the list by hand: { week_start, name, quantity, unit }
 app.post('/api/shopping-list/items', async (request, response, next) => {
   const { errors, value } = validateShoppingItem(request.body ?? {})
   if (errors.length > 0) return response.status(400).json({ error: errors.join('; ') })

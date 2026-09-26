@@ -14,6 +14,13 @@
 //   would ask for (default 50 g, 100 ml or 1 piece); `label` names a piece,
 //   e.g. 'head' for garlic or 'bunch' for pechay.
 //
+// sizes(name, category, label, options, extras)
+//   Sold only in a few package sizes, counted in pieces: eggs by the dozen or
+//   half dozen, instant noodles by the pack or bundle. `label` names one piece
+//   ('egg', 'pack'); each option is { sold, size, price } with `size` in
+//   pieces. The shopping list buys the cheapest mix that covers what the
+//   recipes need.
+//
 // Options that turn recipe amounts into the product's unit:
 //   perMl  how many product units one ml of the recipe amount is
 //          (grams per ml for sugar measured in cups; cubes per ml of stock)
@@ -32,6 +39,8 @@ const pack = (name, category, sold, size, unit, price, options = {}) =>
   ({ name, category, kind: 'pack', sold, size, unit, price, ...options })
 const loose = (name, category, unit, price, options = {}) =>
   ({ name, category, kind: 'loose', unit, price, ...options })
+const sizes = (name, category, label, options, extras = {}) =>
+  ({ name, category, kind: 'sizes', unit: 'pc', label, options, ...extras })
 
 export const PRODUCTS = [
   // Pantry: sauces and condiments
@@ -102,6 +111,14 @@ export const PRODUCTS = [
   loose('Rice', PANTRY, 'g', 55, { step: 1000, perMl: 0.83, also: ['white rice', ['cooked rice', { perMl: 0.27 }]] }),
   pack('Glutinous rice', PANTRY, 'pack', 1000, 'g', 80, { perMl: 0.83, also: ['malagkit', 'sticky rice'] }),
   pack('Canton noodles', PANTRY, 'pack', 500, 'g', 70, { also: ['pancit canton'] }),
+  sizes('Instant pancit canton', PANTRY, 'pack', [
+    { sold: 'pack', size: 1, price: 17 },
+    { sold: 'bundle', size: 6, price: 95 },
+  ], {
+    per: { pack: 1, bundle: 6 },
+    perG: 1 / 60, // one pack is about 60 g
+    also: ['instant canton', 'instant pancit', 'lucky me pancit canton', 'pancit canton instant'],
+  }),
   pack('Egg noodles', PANTRY, 'pack', 400, 'g', 60),
   pack('Spaghetti', PANTRY, 'pack', 500, 'g', 90),
   pack('Fettuccine', PANTRY, 'pack', 500, 'g', 120),
@@ -136,7 +153,10 @@ export const PRODUCTS = [
   pack('Firm tofu', PROTEIN, 'pack', 250, 'g', 30, { also: ['tofu', 'tokwa'] }),
 
   // Dairy & eggs
-  loose('Eggs', DAIRY, 'pc', 9, { also: ['egg'] }),
+  sizes('Eggs', DAIRY, 'egg', [
+    { sold: 'half dozen', size: 6, price: 55 },
+    { sold: 'dozen', size: 12, price: 105 },
+  ], { per: { dozen: 12 }, also: ['egg', 'large eggs', 'medium eggs'] }),
   pack('Butter', DAIRY, 'bar', 225, 'g', 200, { perMl: 0.96 }),
   pack('Milk', DAIRY, 'carton', 1000, 'ml', 100, { also: ['fresh milk'] }),
   pack('All-purpose cream', DAIRY, 'pack', 250, 'ml', 70),
@@ -145,11 +165,12 @@ export const PRODUCTS = [
   pack('Cheddar slices', DAIRY, 'pack', 10, 'pc', 150, { per: { slice: 1 } }),
   pack('Parmesan', DAIRY, 'pack', 100, 'g', 170, { perMl: 0.4, also: ['parmesan cheese'] }),
 
-  // Produce: by the piece, head or bunch (price each)
-  loose('Onion', PRODUCE, 'pc', 15, { also: ['onions', 'red onion', 'white onion'] }),
-  loose('Garlic', PRODUCE, 'pc', 15, { label: 'head', per: { clove: 0.1 }, also: ['bawang'] }),
-  loose('Tomato', PRODUCE, 'pc', 10, { also: ['tomatoes'] }),
-  loose('Carrot', PRODUCE, 'pc', 20, { also: ['carrots'] }),
+  // Produce: by the piece, head or bunch (price each). perG lets an amount by
+  // weight ("500 g onions") count as pieces: a medium onion is about 100 g.
+  loose('Onion', PRODUCE, 'pc', 15, { perG: 1 / 100, also: ['onions', 'red onion', 'white onion'] }),
+  loose('Garlic', PRODUCE, 'pc', 15, { label: 'head', perG: 1 / 40, per: { clove: 0.1 }, also: ['bawang'] }),
+  loose('Tomato', PRODUCE, 'pc', 10, { perG: 1 / 100, also: ['tomatoes'] }),
+  loose('Carrot', PRODUCE, 'pc', 20, { perG: 1 / 150, also: ['carrots'] }),
   loose('Radish', PRODUCE, 'pc', 30, { also: ['labanos'] }),
   loose('Eggplant', PRODUCE, 'pc', 20, { also: ['talong'] }),
   loose('Green papaya', PRODUCE, 'pc', 40),

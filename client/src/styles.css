@@ -258,12 +258,18 @@ h2,
   font-size: 14px;
 }
 
-/* Recipes screen: search box, cuisine filter and sort dropdown side by side */
+/* Recipes screen: search box, cuisine filter, sort dropdown and Add a recipe
+   side by side */
 .toolbar {
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  flex: 0 1 680px;
+  flex: 0 1 840px;
+}
+
+.addRecipeBtn {
+  flex: none;
+  white-space: nowrap;
 }
 
 .search {
@@ -410,6 +416,15 @@ h2,
   flex: 1;
 }
 
+.myRecipeTag {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 1px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
 .cardMessage {
   margin: 0;
   font-size: 14px;
@@ -484,6 +499,87 @@ body:has(.recipeDialog[open]) {
   margin-top: var(--space-3);
 }
 
+/* Delete recipe: red outline, then solid red to confirm */
+.btnDanger {
+  border-color: var(--color-error);
+  color: var(--color-error);
+}
+
+.btnDangerSolid {
+  background: var(--color-error);
+  color: var(--color-on-primary);
+}
+
+.deleteWarning {
+  margin-top: var(--space-3);
+}
+
+/* Add a recipe pop-up */
+.newRecipeForm {
+  gap: 12px;
+}
+
+.newRecipeHint {
+  margin: 0;
+  font-size: 14px;
+}
+
+.fieldLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.fieldLabel .input {
+  width: 100%;
+}
+
+/* "Let AI suggest one" at the top of the Add a recipe pop-up */
+.aiBox {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: 12px;
+  border-radius: var(--radius-md);
+  background: var(--color-accent);
+}
+
+.aiTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-primary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.aiRow {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.aiRow .input {
+  flex: 1;
+}
+
+.aiBox .errorText {
+  margin: 0;
+}
+
+.aiNote {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-primary);
+}
+
+.fieldRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
 /* Edit ingredients screen: form on the left, list on the right */
 .editor {
   display: grid;
@@ -518,8 +614,23 @@ body:has(.recipeDialog[open]) {
   font-size: 14px;
 }
 
-.ingredientRow span:nth-child(3) {
+.ingredientCost {
   text-align: right;
+}
+
+/* Serves − [ 4 ] + people, above the ingredient list */
+.servingsPicker {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-bottom: var(--space-1);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.formHint {
+  margin: 0;
+  font-size: var(--text-label);
 }
 
 .costTotal {
@@ -839,10 +950,14 @@ body:has(.recipeDialog[open]) {
 
 .groceryItem {
   display: grid;
-  /* name, amount, cost, remove (empty for items that came from a recipe) */
-  grid-template-columns: 1fr auto 90px 28px;
+  /* Name, cost and remove (empty for recipe items) on the first line; the
+     amount, with its − and + for recipe items, on the line under the name */
+  grid-template-columns: 1fr 90px 28px;
+  grid-template-areas:
+    "label cost remove"
+    "qty   qty  qty";
   align-items: center;
-  gap: var(--space-3);
+  gap: 4px var(--space-1);
   padding: var(--space-1) 0;
   border-bottom: 1px solid var(--color-border);
   font-size: 14px;
@@ -873,8 +988,106 @@ body:has(.recipeDialog[open]) {
   font-size: var(--text-label);
 }
 
+.groceryLabel {
+  grid-area: label;
+}
+
+.groceryQty {
+  grid-area: qty;
+  padding-left: 30px; /* lines up with the name, past the checkbox */
+}
+
 .groceryCost {
+  grid-area: cost;
   text-align: right;
+}
+
+.groceryItem > :last-child {
+  grid-area: remove;
+}
+
+/* − [ 2 ] + bottles · 2 bottles (385 ml each) · Reset */
+.qtyEditor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px var(--space-1);
+}
+
+.qtyControls {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.qtyBtn {
+  display: flex;
+  padding: 4px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-primary);
+  cursor: pointer;
+}
+
+.qtyBtn:hover:not(:disabled) {
+  background: var(--color-accent);
+}
+
+.qtyBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.qtyInput {
+  box-sizing: border-box;
+  width: 56px;
+  padding: 3px 4px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-1);
+  font: inherit;
+  font-size: 14px;
+  text-align: center;
+  -moz-appearance: textfield;
+}
+
+/* The − and + buttons replace the browser's own tiny arrows */
+.qtyInput::-webkit-inner-spin-button,
+.qtyInput::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.qtyUnit {
+  font-size: 13px;
+}
+
+.qtyAmount {
+  font-size: var(--text-label);
+}
+
+.linkBtn {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-primary);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.qtyBtn:focus-visible,
+.qtyInput:focus-visible,
+.linkBtn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.priceNote {
+  font-size: 13px;
 }
 
 /* Ticked: struck through and faded, still readable */
@@ -907,10 +1120,10 @@ body:has(.recipeDialog[open]) {
   outline-offset: 2px;
 }
 
-/* Add an item: name takes the spare width, then amount, cost and Add */
+/* Add an item: name takes the spare width, then quantity, unit and Add */
 .addItemForm {
   display: grid;
-  grid-template-columns: 1fr minmax(120px, 180px) minmax(90px, 120px) auto;
+  grid-template-columns: 1fr 90px minmax(120px, 170px) auto;
   gap: var(--space-1);
   align-items: center;
   margin-bottom: var(--space-3);
@@ -1240,6 +1453,18 @@ body:has(.recipeDialog[open]) {
     flex: 1 1 0;
   }
 
+  .addRecipeBtn {
+    flex-basis: 100%;
+  }
+
+  .fieldRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .fieldRow .fieldLabel:first-child {
+    grid-column: 1 / -1;
+  }
+
   .recipeGrid {
     grid-template-columns: 1fr;
   }
@@ -1255,11 +1480,11 @@ body:has(.recipeDialog[open]) {
   }
 
   /* Name on its own line, then quantity, cost and Remove */
-  .ingredientRow span:first-child {
+  .ingredientRow > span:first-child {
     grid-column: 1 / -1;
   }
 
-  .ingredientRow span:nth-child(3) {
+  .ingredientCost {
     text-align: left;
   }
 
@@ -1290,12 +1515,22 @@ body:has(.recipeDialog[open]) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .groceryItem {
-    grid-template-columns: 1fr auto 28px;
-    gap: 4px var(--space-1);
+  /* All / To buy / Checked stay on one line */
+  .filterTab {
+    padding: 6px 10px;
+    font-size: 13px;
   }
 
-  /* Name on its own line, then amount and cost, then Add */
+  /* Cost and remove take only the room they need, so names have space */
+  .groceryItem {
+    grid-template-columns: 1fr auto auto;
+  }
+
+  .groceryGroup {
+    padding: var(--space-3) 16px;
+  }
+
+  /* Name on its own line, then quantity and unit, then Add */
   .addItemForm {
     grid-template-columns: 1fr 1fr;
   }
@@ -1305,13 +1540,6 @@ body:has(.recipeDialog[open]) {
     grid-column: 1 / -1;
   }
 
-  .groceryLabel {
-    grid-column: 1 / -1;
-  }
-
-  .groceryQty {
-    padding-left: 30px;
-  }
 
   .sidebar {
     top: auto;

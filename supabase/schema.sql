@@ -184,9 +184,82 @@ CREATE TABLE IF NOT EXISTS public.shopping_items (
 CREATE INDEX IF NOT EXISTS shopping_items_user_week_idx
   ON public.shopping_items (user_id, week_start);
 
+-- Added items are now a quantity and a unit ("2", "bottle"); the app works
+-- out the cost. estimated_cost holds an AI estimate for items the store
+-- catalog does not know, and 0 otherwise. amount is no longer used.
+ALTER TABLE public.shopping_items
+  ADD COLUMN IF NOT EXISTS quantity NUMERIC(10,3) NOT NULL DEFAULT 1
+    CHECK (quantity > 0 AND quantity <= 10000);
+ALTER TABLE public.shopping_items
+  ADD COLUMN IF NOT EXISTS unit TEXT NOT NULL DEFAULT '' CHECK (length(unit) <= 20);
+
 ALTER TABLE public.shopping_items ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Own shopping items" ON public.shopping_items;
 CREATE POLICY "Own shopping items" ON public.shopping_items
   FOR ALL TO authenticated
   USING ((SELECT auth.uid()) = user_id) WITH CHECK ((SELECT auth.uid()) = user_id);
+
+-- ---------------------------------------------------------------------------
+-- Recipes a user added themselves
+-- ---------------------------------------------------------------------------
+
+-- "Add a recipe" on the Recipes screen. Only its owner sees it. Ids start at
+-- 1001 so they never collide with the 40 bundled recipes (ids 1 to 40), which
+-- lets meal_plan.recipe_id point at either kind. ingredients is an array of
+-- { name, quantity, unit, estimated_cost }, filled in on the edit screen.
+CREATE TABLE IF NOT EXISTS public.user_recipes (
+  id          BIGINT      GENERATED ALWAYS AS IDENTITY (START WITH 1001) PRIMARY KEY,
+  user_id     UUID        NOT NULL DEFAULT auth.uid() REFERENCES auth.users (id) ON DELETE CASCADE,
+  name        TEXT        NOT NULL CHECK (length(name) BETWEEN 1 AND 120),
+  cuisine     TEXT        NOT NULL CHECK (cuisine IN ('Filipino', 'Chinese', 'Western')),
+  minutes     INTEGER     NOT NULL CHECK (minutes BETWEEN 1 AND 1440),
+  calories    INTEGER     NOT NULL DEFAULT 0 CHECK (calories BETWEEN 0 AND 10000),
+  image       TEXT        NOT NULL DEFAULT '' CHECK (length(image) <= 500),
+  ingredients JSONB       NOT NULL DEFAULT '[]' CHECK (jsonb_typeof(ingredients) = 'array'),
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS user_recipes_user_idx ON public.user_recipes (user_id);
+
+ALTER TABLE public.user_recipes ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Own recipes" ON public.user_recipes;
+CREATE POLICY "Own recipes" ON public.user_recipes
+  FOR ALL TO authenticated
+  USING ((SELECT auth.uid()) = user_id) WITH CHECK ((SELECT auth.uid()) = user_id);
+
+-- ---------------------------------------------------------------------------
+-- Quantities the user changed on the shopping list
+-- ---------------------------------------------------------------------------
+
+-- The Grocery List suggests how much to buy; the user can change it (3 bottles
+-- instead of 1, 0.5 kg instead of 0.4 kg). quantity is in the line's buying
+-- unit: packages, pieces, eggs, or kg / L for things sold by weight. No row
+-- means "use the suggestion". Kept per week, like the plan.
+CREATE TABLE IF NOT EXISTS public.shopping_quantities (
+  user_id    UUID          NOT NULL DEFAULT auth.uid() REFERENCES auth.users (id) ON DELETE CASCADE,
+  week_start DATE          NOT NULL,
+  item_key   TEXT          NOT NULL CHECK (length(item_key) <= 200),
+  quantity   NUMERIC(10,3) NOT NULL CHECK (quantity > 0 AND quantity <= 10000),
+  PRIMARY KEY (user_id, week_start, item_key)
+);
+
+ALTER TABLE public.shopping_quantities ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Own shopping quantities" ON public.shopping_quantities;
+CREATE POLICY "Own shopping quantities" ON public.shopping_quantities
+  FOR ALL TO authenticated
+  USING ((SELECT auth.uid()) = user_id) WITH CHECK ((SELECT auth.uid()) = user_id);
+
+-- ---------------------------------------------------------------------------
+-- Servings
+-- ---------------------------------------------------------------------------
+
+-- How many people a recipe's ingredient amounts are for, set on the edit
+-- screen ("Serves 6 people" scales every amount). NULL means the recipe's
+-- default of 4.
+ALTER TABLE public.recipe_ingredients
+  ADD COLUMN IF NOT EXISTS servings INTEGER CHECK (servings BETWEEN 1 AND 100);
+ALTER TABLE public.user_recipes
+  ADD COLUMN IF NOT EXISTS servings INTEGER NOT NULL DEFAULT 4 CHECK (servings BETWEEN 1 AND 100);

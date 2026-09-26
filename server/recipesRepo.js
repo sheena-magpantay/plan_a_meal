@@ -17,12 +17,12 @@ export const DAYS = [
 // The list page shows every recipe with its ingredient count and total cost.
 export async function listRecipes(pool) {
   const result = await pool.query(
-    `SELECT r.id, r.name, r.cuisine, r.minutes, r.image, r.calories,
+    `SELECT r.id, r.name, r.cuisine, r.minutes, r.image, r.calories, r.custom,
             COUNT(i.id)::int AS ingredient_count,
             COALESCE(SUM(i.estimated_cost), 0)::double precision AS total_cost
      FROM recipes r
      LEFT JOIN ingredients i ON i.recipe_id = r.id
-     GROUP BY r.id, r.name, r.cuisine, r.minutes, r.image, r.calories
+     GROUP BY r.id, r.name, r.cuisine, r.minutes, r.image, r.calories, r.custom
      ORDER BY r.id`
   )
   return result.rows
@@ -30,7 +30,7 @@ export async function listRecipes(pool) {
 
 export async function getRecipe(pool, id) {
   const recipe = await pool.query(
-    'SELECT id, name, cuisine, minutes, image, calories FROM recipes WHERE id = $1',
+    'SELECT id, name, cuisine, minutes, image, calories, custom, servings FROM recipes WHERE id = $1',
     [id]
   )
   if (!recipe.rows[0]) return null
@@ -46,9 +46,32 @@ export async function getRecipe(pool, id) {
   return { ...recipe.rows[0], ingredients: ingredients.rows }
 }
 
+// A recipe added on the Recipes screen. It starts with no ingredients; the
+// edit screen fills them in.
+export async function createRecipe(pool, { name, cuisine, minutes, calories, image }) {
+  const { rows } = await pool.query(
+    `INSERT INTO recipes (name, cuisine, minutes, calories, image, custom)
+     VALUES ($1, $2, $3, $4, $5, true)
+     RETURNING id, name, cuisine, minutes, image, calories, custom`,
+    [name, cuisine, minutes, calories, image]
+  )
+  return { ...rows[0], ingredients: [] }
+}
+
+// Only added recipes can be deleted. Its ingredients and meal plan entries go
+// with it (ON DELETE CASCADE). Returns false when there was no such recipe.
+export async function deleteRecipe(pool, id) {
+  const { rowCount } = await pool.query(
+    'DELETE FROM recipes WHERE id = $1 AND custom',
+    [id]
+  )
+  return rowCount > 0
+}
+
 // Saving the edit screen replaces the whole ingredient list in one transaction,
 // so a failure halfway through never leaves a recipe with half its ingredients.
-export async function replaceIngredients(pool, id, ingredients) {
+// servings, when given, is saved too: how many people the amounts are for.
+export async function replaceIngredients(pool, id, ingredients, servings) {
   const client = await pool.connect()
   try {
     await client.query('BEGIN')
@@ -59,6 +82,7 @@ export async function replaceIngredients(pool, id, ingredients) {
       return null
     }
 
+    if (servings) await client.query('UPDATE recipes SET servings = $2 WHERE id = $1', [id, servings])
     await client.query('DELETE FROM ingredients WHERE recipe_id = $1', [id])
     for (const [position, ingredient] of ingredients.entries()) {
       await client.query(
@@ -149,19 +173,50 @@ export async function getShoppingList(pool, weekStart) {
     [weekStart]
   )
   const added = await pool.query(
-    `SELECT id, name, amount, estimated_cost::double precision AS estimated_cost
+    `SELECT id, name, quantity::double precision AS quantity, unit,
+            estimated_cost::double precision AS estimated_cost
      FROM shopping_items WHERE week_start = $1 ORDER BY added_at`,
     [weekStart]
   )
-  return buildShoppingList(lines.rows, checks.rows.map((row) => row.item_key), added.rows)
+  const quantities = await pool.query(
+    `SELECT item_key, quantity::double precision AS quantity
+     FROM shopping_quantities WHERE week_start = $1`,
+    [weekStart]
+  )
+  return buildShoppingList(
+    lines.rows,
+    checks.rows.map((row) => row.item_key),
+    added.rows,
+    Object.fromEntries(quantities.rows.map((row) => [row.item_key, row.quantity]))
+  )
 }
 
-export async function addShoppingItem(pool, { week_start, name, amount, estimated_cost }) {
+// quantity null goes back to the list's own suggestion.
+export async function setShoppingItemQuantity(pool, { week_start, item_key, quantity }) {
+  if (quantity == null) {
+    await pool.query(
+      'DELETE FROM shopping_quantities WHERE week_start = $1 AND item_key = $2',
+      [week_start, item_key]
+    )
+  } else {
+    await pool.query(
+      `INSERT INTO shopping_quantities (week_start, item_key, quantity) VALUES ($1, $2, $3)
+       ON CONFLICT (week_start, item_key) DO UPDATE SET quantity = EXCLUDED.quantity`,
+      [week_start, item_key, quantity]
+    )
+  }
+  return { week_start, item_key, quantity }
+}
+
+// Priced from the store catalog when the list is built; an item the catalog
+// does not know has no price here (the Supabase version asks the AI).
+export async function addShoppingItem(pool, { week_start, name, quantity, unit }) {
   const { rows } = await pool.query(
-    `INSERT INTO shopping_items (week_start, name, amount, estimated_cost)
+    `INSERT INTO shopping_items (week_start, name, quantity, unit)
      VALUES ($1, $2, $3, $4)
-     RETURNING id, name, amount, estimated_cost::double precision AS estimated_cost`,
-    [week_start, name, amount, estimated_cost]
+     RETURNING id, name, quantity::double precision AS quantity, unit,
+               estimated_cost::double precision AS estimated_cost`,
+    [week_start, name, quantity, unit]
   )
   return customItem(rows[0])
 }

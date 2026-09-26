@@ -38,12 +38,15 @@ const implementation = USING_SUPABASE ? supabaseApi : USING_MOCK_API ? mockApi :
 export const {
   listRecipes,
   getRecipe,
+  createRecipe,
+  deleteRecipe,
   updateRecipeIngredients,
   listMealPlan,
   addToMealPlan,
   removeFromMealPlan,
   getShoppingList,
   setShoppingItemChecked,
+  setShoppingItemQuantity,
   addShoppingItem,
   removeShoppingItem,
 } = implementation

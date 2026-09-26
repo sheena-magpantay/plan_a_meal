@@ -20,6 +20,14 @@ CREATE TABLE IF NOT EXISTS recipes (
 ALTER TABLE recipes ADD COLUMN IF NOT EXISTS image TEXT NOT NULL DEFAULT '';
 ALTER TABLE recipes ADD COLUMN IF NOT EXISTS calories INTEGER NOT NULL DEFAULT 0;
 
+-- true for recipes added on the Recipes screen, which can be deleted; the
+-- seeded ones stay false.
+ALTER TABLE recipes ADD COLUMN IF NOT EXISTS custom BOOLEAN NOT NULL DEFAULT false;
+
+-- How many people the ingredient amounts are for (the edit screen scales them).
+ALTER TABLE recipes ADD COLUMN IF NOT EXISTS servings INTEGER NOT NULL DEFAULT 4
+  CHECK (servings BETWEEN 1 AND 100);
+
 -- One row per ingredient line. estimated_cost is in pesos, for the whole
 -- quantity. position keeps the order the user entered them in.
 CREATE TABLE IF NOT EXISTS ingredients (
@@ -80,3 +88,20 @@ CREATE TABLE IF NOT EXISTS shopping_items (
 );
 
 CREATE INDEX IF NOT EXISTS shopping_items_week_idx ON shopping_items (week_start);
+
+-- Added items are a quantity and a unit; the cost is worked out from the
+-- store catalog. amount is no longer used.
+ALTER TABLE shopping_items
+  ADD COLUMN IF NOT EXISTS quantity NUMERIC(10,3) NOT NULL DEFAULT 1
+    CHECK (quantity > 0 AND quantity <= 10000);
+ALTER TABLE shopping_items
+  ADD COLUMN IF NOT EXISTS unit TEXT NOT NULL DEFAULT '' CHECK (length(unit) <= 20);
+
+-- Quantities changed on the shopping list, in the line's buying unit
+-- (packages, pieces, eggs, or kg / L). No row means "use the suggestion".
+CREATE TABLE IF NOT EXISTS shopping_quantities (
+  week_start DATE          NOT NULL,
+  item_key   TEXT          NOT NULL,
+  quantity   NUMERIC(10,3) NOT NULL CHECK (quantity > 0 AND quantity <= 10000),
+  PRIMARY KEY (week_start, item_key)
+);

@@ -30,10 +30,17 @@ export const listRecipes = () => request('/api/recipes')
 
 export const getRecipe = (id) => request(`/api/recipes/${id}`)
 
-export const updateRecipeIngredients = (id, ingredients) =>
+// recipe: { name, cuisine, minutes, calories, image }
+export const createRecipe = (recipe) =>
+  request('/api/recipes', { method: 'POST', body: JSON.stringify(recipe) })
+
+export const deleteRecipe = (id) => request(`/api/recipes/${id}`, { method: 'DELETE' })
+
+// servings: how many people these amounts are for (optional)
+export const updateRecipeIngredients = (id, ingredients, servings) =>
   request(`/api/recipes/${id}/ingredients`, {
     method: 'PUT',
-    body: JSON.stringify({ ingredients }),
+    body: JSON.stringify({ ingredients, servings }),
   })
 
 // weekStart is that week's Monday as YYYY-MM-DD (see src/week.js).
@@ -50,11 +57,15 @@ export const removeFromMealPlan = (id) =>
 export const getShoppingList = (weekStart) =>
   request(`/api/shopping-list?week=${encodeURIComponent(weekStart)}`)
 
+// { week_start, item_key, quantity }; quantity null goes back to the suggestion
+export const setShoppingItemQuantity = (change) =>
+  request('/api/shopping-list/quantities', { method: 'PUT', body: JSON.stringify(change) })
+
 // check: { week_start, item_key, checked }
 export const setShoppingItemChecked = (check) =>
   request('/api/shopping-list/checks', { method: 'PUT', body: JSON.stringify(check) })
 
-// item: { week_start, name, amount, estimated_cost }
+// item: { week_start, name, quantity, unit }
 export const addShoppingItem = (item) =>
   request('/api/shopping-list/items', { method: 'POST', body: JSON.stringify(item) })
 

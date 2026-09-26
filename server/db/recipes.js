@@ -14,6 +14,8 @@
 // calories is a rough estimate per serving, used for the home screen's
 // average. Adjust any of them freely.
 
+import { isSpoonMeasure } from './shoppingList.js'
+
 const data = [
   // Filipino
   {
@@ -545,13 +547,16 @@ const data = [
   },
 ]
 
+// Every recipe serves 4 unless it says otherwise. Ingredients measured in cups
+// or spoons carry no cost (see isSpoonMeasure in shoppingList.js).
 const recipes = data.map((recipe) => ({
+  servings: 4,
   ...recipe,
   ingredients: recipe.ingredients.map(([name, quantity, unit, estimated_cost]) => ({
     name,
     quantity,
     unit,
-    estimated_cost,
+    estimated_cost: isSpoonMeasure(unit) ? 0 : estimated_cost,
   })),
 }))
 

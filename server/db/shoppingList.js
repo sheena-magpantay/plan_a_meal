@@ -79,7 +79,7 @@ const round = (value, places = 2) => Math.round(value * 10 ** places) / 10 ** pl
 const EPSILON = 1e-9
 
 function plural(word, count) {
-  if (count === 1 || word === 'pc') return word
+  if (count === 1 || word === 'pc' || word.endsWith('dozen')) return word
   if (word === 'loaf') return 'loaves'
   return /(ch|sh|x|s)$/.test(word) ? `${word}es` : `${word}s`
 }
@@ -88,61 +88,257 @@ function plural(word, count) {
 function formatMeasure(value, unit) {
   if (unit === 'g') return value >= 1000 ? `${round(value / 1000)} kg` : `${Math.round(value)} g`
   if (unit === 'ml') return value >= 1000 ? `${round(value / 1000)} L` : `${Math.round(value)} ml`
-  return `${Math.ceil(value - EPSILON)} ${unit}`
+  const count = Math.ceil(value - EPSILON)
+  return `${count} ${plural(unit, count)}`
 }
 
-// What to put in the basket, its cost, and (for packages) how much the
-// recipes actually use.
-function purchase(product, need) {
+// The cheapest mix of a 'sizes' product's packages holding at least `need`
+// pieces. Ties go to fewer packages. There are only two or three sizes and
+// small counts, so trying every mix is instant.
+function cheapestMix(options, need) {
+  const target = Math.max(1, Math.ceil(need - EPSILON))
+  let best = null
+  const tryFrom = (index, counts, pieces, cost) => {
+    if (pieces >= target) {
+      const packages = counts.reduce((sum, count) => sum + count, 0)
+      if (!best || cost < best.cost || (cost === best.cost && packages < best.packages)) {
+        best = { counts: [...counts], pieces, cost, packages }
+      }
+      return
+    }
+    if (index === options.length) return
+    const { size, price } = options[index]
+    const most = Math.ceil((target - pieces) / size)
+    for (let count = 0; count <= most; count++) {
+      counts[index] = count
+      tryFrom(index + 1, counts, pieces + count * size, cost + count * price)
+    }
+    counts[index] = 0
+  }
+  tryFrom(0, options.map(() => 0), 0, 0)
+  return best
+}
+
+const stepOf = (product) =>
+  product.step ?? (product.unit === 'g' ? 50 : product.unit === 'ml' ? 100 : 1)
+
+// How the Grocery List counts a line when the user changes its quantity: in
+// what you actually buy. Whole bottles or packs, eggs, pieces or bunches, and
+// kg or L for meat and produce sold by weight. Returns the amount the list
+// would buy by itself, and the size of one +/- step.
+function buyingDefault(product, need) {
   if (product.kind === 'pack') {
-    const count = Math.max(1, Math.ceil(need / product.size - EPSILON))
-    const size = formatMeasure(product.size, product.unit)
-    const amount = `${count} ${plural(product.sold, count)} (${size}${count > 1 ? ' each' : ''})`
-    const uses = need < count * product.size - EPSILON
-      ? `uses about ${formatMeasure(need, product.unit)}`
-      : ''
-    return { amount, uses, cost: count * product.price }
+    return { quantity: Math.max(1, Math.ceil(need / product.size - EPSILON)), step: 1 }
+  }
+  if (product.kind === 'sizes') {
+    const step = Math.min(...product.options.map((option) => option.size))
+    return { quantity: cheapestMix(product.options, need).pieces, step }
+  }
+  const step = stepOf(product)
+  const amount = Math.max(step, Math.ceil(need / step - EPSILON) * step)
+  if (product.unit === 'pc') return { quantity: amount, step }
+  return { quantity: amount / 1000, step: step / 1000 } // grams -> kg, ml -> L
+}
+
+// The unit name shown beside the quantity: "bottles", "eggs", "heads", "kg".
+function buyingUnit(product, quantity) {
+  if (product.kind === 'pack') return plural(product.sold, quantity)
+  if (product.kind === 'sizes') return plural(product.label, quantity)
+  if (product.unit === 'pc') return plural(product.label ?? 'pc', quantity)
+  return product.unit === 'g' ? 'kg' : 'L'
+}
+
+// What `quantity` (in buying units) puts in the basket, what it costs at the
+// catalog's prices, and how much it holds in the product's own unit.
+function priceAt(product, quantity) {
+  if (product.kind === 'sizes') {
+    const mix = cheapestMix(product.options, quantity)
+    // Largest package first: "1 bundle (6 packs) + 2 packs"
+    const amount = product.options
+      .map((option, index) => ({ ...option, count: mix.counts[index] }))
+      .filter((option) => option.count > 0)
+      .sort((a, b) => b.size - a.size)
+      .map(({ sold, size, count }) =>
+        size > 1
+          ? `${count} ${plural(sold, count)} (${size} ${plural(product.label, size)}${count > 1 ? ' each' : ''})`
+          : `${count} ${plural(sold, count)}`
+      )
+      .join(' + ')
+    return { amount, cost: mix.cost, holds: mix.pieces }
   }
 
-  const step = product.step ?? (product.unit === 'g' ? 50 : product.unit === 'ml' ? 100 : 1)
-  const quantity = Math.max(step, Math.ceil(need / step - EPSILON) * step)
+  if (product.kind === 'pack') {
+    const count = Math.max(1, Math.round(quantity))
+    const size = formatMeasure(product.size, product.unit)
+    return {
+      amount: `${count} ${plural(product.sold, count)} (${size}${count > 1 ? ' each' : ''})`,
+      cost: count * product.price,
+      holds: count * product.size,
+    }
+  }
+
   if (product.unit === 'pc') {
+    const count = Math.max(1, Math.round(quantity))
     const label = product.label ?? 'pc'
-    return { amount: `${quantity} ${plural(label, quantity)}`, uses: '', cost: quantity * product.price }
+    return { amount: `${count} ${plural(label, count)}`, cost: count * product.price, holds: count }
   }
+
   // Loose weight or volume is priced per kg or per litre.
+  const base = quantity * 1000
   return {
-    amount: formatMeasure(quantity, product.unit),
-    uses: '',
-    cost: round((quantity / 1000) * product.price),
+    amount: formatMeasure(base, product.unit),
+    cost: round(quantity * product.price),
+    holds: base,
   }
+}
+
+// The recipes' total need, said the way a person would: "7 eggs", "300 ml".
+function describeNeed(product, need) {
+  if (product.unit === 'pc' && product.kind !== 'pack') {
+    const count = Math.ceil(need - EPSILON)
+    return `${count} ${plural(product.label ?? 'pc', count)}`
+  }
+  return formatMeasure(need, product.unit)
+}
+
+// The small note under an item: a warning when the chosen quantity is less
+// than the recipes need, or how much of a package the recipes use.
+function usesNote(product, need, holds) {
+  if (holds < need - EPSILON) return `recipes need ${describeNeed(product, need)}`
+  if (product.kind === 'pack' && need < holds - EPSILON) {
+    return `uses about ${formatMeasure(need, product.unit)}`
+  }
+  if (product.kind === 'sizes') {
+    const used = Math.ceil(need - EPSILON)
+    if (used < holds) return `uses ${used} of ${holds} ${plural(product.label, holds)}`
+  }
+  return ''
+}
+
+// A line matched to a store product. `chosen` is the user's own quantity for
+// it this week, in buying units, or undefined to let the list decide.
+function productLine(product, need, chosen) {
+  const { quantity: suggested, step } = buyingDefault(product, need)
+  const quantity = chosen > 0 ? chosen : suggested
+  const { amount, cost, holds } = priceAt(product, quantity)
+  return {
+    amount,
+    uses: usesNote(product, need, holds),
+    cost,
+    quantity,
+    unit: buyingUnit(product, quantity),
+    step,
+    suggested_quantity: suggested,
+  }
+}
+
+// A line the catalog does not know. Its cost is the recipes' own estimate,
+// scaled when the user changes the quantity.
+function unknownLine(group, chosen) {
+  const byMeasure = group.base === 'g' || group.base === 'ml'
+  const suggested = byMeasure ? Math.max(1, Math.round(group.need)) : Math.ceil(group.need - EPSILON)
+  const quantity = chosen > 0 ? chosen : suggested
+  const perUnit = group.need > 0 ? group.estimated_cost / group.need : 0
+  return {
+    amount: formatMeasure(quantity, group.base),
+    uses: quantity < group.need - EPSILON
+      ? `recipes need ${formatMeasure(group.need, group.base)}`
+      : '',
+    cost: group.need > 0 ? perUnit * quantity : group.estimated_cost,
+    priced: group.estimated_cost > 0,
+    quantity,
+    unit: group.base === 'pc' ? 'pc' : byMeasure ? group.base : plural(group.base, quantity),
+    step: byMeasure ? 10 : 1,
+    suggested_quantity: suggested,
+  }
+}
+
+// Ingredients measured in cups or spoons (a tablespoon of soy sauce, a
+// teaspoon of pepper) come from what is already in the kitchen, so a recipe
+// gives them no cost. The shopping list still prices the bottle or pack.
+export const isSpoonMeasure = (unit) => ['cup', 'tbsp', 'tsp'].includes(normalizeUnit(unit ?? ''))
+
+// What `quantity unit` of `name` costs as a share of its store price: 250 g
+// of a ₱380/kg pork belly is ₱95. This is a recipe ingredient's cost; the
+// shopping list, by contrast, charges for whole packages. 0 for cups and
+// spoons (see isSpoonMeasure), null when the store catalog does not know it.
+export function ingredientCost(name, quantity, unit) {
+  if (isSpoonMeasure(unit)) return 0
+  const product = findProduct(name)
+  const amount = product ? toProductUnit(product, Number(quantity), normalizeUnit(unit ?? '')) : null
+  if (amount == null || !(amount > 0)) return null
+  if (product.kind === 'pack') return round((amount * product.price) / product.size)
+  if (product.kind === 'sizes') {
+    const perPiece = Math.min(...product.options.map((option) => option.price / option.size))
+    return round(amount * perPiece)
+  }
+  if (product.unit === 'pc') return round(amount * product.price)
+  return round((amount / 1000) * product.price) // loose weight or volume, priced per kg or L
+}
+
+// Whether the store catalog can price `quantity unit` of `name`. When it
+// cannot, the app asks for an estimate instead (see addShoppingItem).
+export function catalogPrices(name, quantity, unit) {
+  const product = findProduct(name)
+  return Boolean(product && toProductUnit(product, Number(quantity), normalizeUnit(unit ?? '')) != null)
 }
 
 // An item the user added to the list themselves ("Add an item" on the Grocery
-// List), not from a recipe. It is never merged with recipe lines: it is shown
-// exactly as typed. Its key is "custom:<id>", so ticking it goes through the
-// same shopping_checks table as every other line.
-// row: { id, name, amount, estimated_cost }
-export function customItem(row, checkedKeys = []) {
+// List), not from a recipe: a name, a quantity and a unit. It is priced like
+// a recipe line: from the store catalog when the name is a known product
+// ("Soy sauce, 2 cups" becomes 2 bottles at the bottle price), otherwise from
+// the estimate saved with it. It stays its own line, never merged into a
+// recipe's. Its key is "custom:<id>", so ticks and quantity changes are saved
+// the same way as every other line.
+// row: { id, name, quantity, unit, estimated_cost }
+// chosen: the user's changed quantity for it, in buying units, if any
+export function customItem(row, checkedKeys = [], chosen) {
   const key = `custom:${row.id}`
+  const quantity = Number(row.quantity) > 0 ? Number(row.quantity) : 1
+  const unit = normalizeUnit(row.unit ?? '')
+  const product = findProduct(row.name)
+  const need = product ? toProductUnit(product, quantity, unit) : null
+  const estimate = Number(row.estimated_cost) || 0
+
+  let bought
+  if (need != null) {
+    bought = productLine(product, need, chosen)
+  } else {
+    const base = unit in MASS ? 'g' : unit in VOLUME ? 'ml' : unit
+    const factor = unit in MASS ? MASS[unit] : unit in VOLUME ? VOLUME[unit] : 1
+    bought = unknownLine({ need: quantity * factor, base, estimated_cost: estimate }, chosen)
+  }
+
   return {
     key,
     id: row.id,
     custom: true,
     name: row.name,
-    category: null,
-    amount: row.amount ?? '',
+    category: need != null ? product.category : null,
+    amount: bought.amount,
     uses: '',
-    estimated_cost: round(Number(row.estimated_cost) || 0),
+    estimated_cost: round(bought.cost),
+    // false when nothing could price it (no catalog match and no estimate)
+    priced: need != null || estimate > 0,
     recipes: [],
     checked: checkedKeys.includes(key),
+    quantity: round(bought.quantity, 3),
+    unit: bought.unit,
+    step: bought.step,
+    suggested_quantity: round(bought.suggested_quantity, 3),
+    edited: chosen !== undefined,
   }
 }
 
 // lines: [{ name, quantity, unit, estimated_cost, recipe_name }]
 // checkedKeys: the item keys ticked for this week
-// customRows: the week's added items, see customItem above
-export function buildShoppingList(lines, checkedKeys, customRows = []) {
+// customRows: the week's added items, see customItem
+// quantities: { item_key: quantity } the user set this week, in buying units
+//
+// Each recipe line also carries what the quantity editor needs: quantity,
+// unit, step, suggested_quantity (what the list would buy by itself) and
+// edited (true when the user's own quantity is in use).
+export function buildShoppingList(lines, checkedKeys, customRows = [], quantities = {}) {
   const groups = new Map()
 
   const addTo = (key, start, line, amount) => {
@@ -175,9 +371,10 @@ export function buildShoppingList(lines, checkedKeys, customRows = []) {
   const checked = new Set(checkedKeys)
   return [...groups.entries()]
     .map(([key, group]) => {
+      const chosen = Number(quantities[key]) || undefined
       const bought = group.product
-        ? purchase(group.product, group.need)
-        : { amount: formatMeasure(group.need, group.base), uses: '', cost: group.estimated_cost }
+        ? productLine(group.product, group.need, chosen)
+        : unknownLine(group, chosen)
       return {
         key,
         name: group.name,
@@ -185,10 +382,20 @@ export function buildShoppingList(lines, checkedKeys, customRows = []) {
         amount: bought.amount,
         uses: bought.uses,
         estimated_cost: round(bought.cost),
+        priced: bought.priced ?? true,
         recipes: group.recipes,
         checked: checked.has(key),
+        quantity: round(bought.quantity, 3),
+        unit: bought.unit,
+        step: bought.step,
+        suggested_quantity: round(bought.suggested_quantity, 3),
+        edited: chosen !== undefined,
       }
     })
-    .concat(customRows.map((row) => customItem(row, checkedKeys)))
+    .concat(
+      customRows.map((row) =>
+        customItem(row, checkedKeys, Number(quantities[`custom:${row.id}`]) || undefined)
+      )
+    )
     .sort((a, b) => a.name.localeCompare(b.name))
 }
