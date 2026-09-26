@@ -74,6 +74,7 @@ const INSTRUCTIONS = `You write recipes for a weekly meal planner used by househ
 - quantity is a number; unit is one of: g, kg, ml, L, cup, tbsp, tsp, pc, clove, head, bunch, can, pack.
 - estimated_cost is your best estimate in Philippine pesos of what that quantity costs at a typical Metro Manila supermarket.
 - Use plain ingredient names ("Chicken thighs", "Soy sauce"), no brand names or preparation notes.
+- Truffle oil is not practical to buy here: for a truffle flavour use "Royal Creamy Mushroom Truffle Sauce Kit" (1 kit, 520 g).
 - If the request is not about food, write a simple, popular Filipino home-cooked dish instead.`
 
 // For { task: "price" }: one number, the cost in pesos.
@@ -127,15 +128,30 @@ async function askGemini(
   )
 
   if (!response.ok) {
-    // The detail goes to the function's logs; the user gets a plain message.
-    console.error('Gemini error', response.status, await response.text())
-    if (response.status === 429) {
+    // The full reply goes to the function's logs. Gemini's own message is
+    // passed on too ("API key not valid…"), so a setup problem can be fixed
+    // without digging through the logs; it never contains the key itself.
+    const detail = await response.text()
+    console.error('Gemini error', response.status, detail)
+    let reason = ''
+    try {
+      reason = String(JSON.parse(detail)?.error?.message ?? '').slice(0, 300)
+    } catch {
+      // Not JSON; the status code is all there is.
+    }
+    if (response.status === 429 || response.status === 503) {
       return json({ error: 'The AI is busy right now. Try again in a minute.' }, 429)
     }
     if (response.status === 404) {
       return json({ error: `Gemini model "${MODEL}" was not found. Set GEMINI_MODEL.` }, 502)
     }
-    return json({ error: 'The AI could not answer. Try again.' }, 502)
+    if (/api key|api_key/i.test(reason)) {
+      return json({ error: `Gemini rejected the API key: ${reason} Check the GEMINI_API_KEY secret.` }, 502)
+    }
+    return json(
+      { error: `The AI could not answer (Gemini ${response.status}${reason ? `: ${reason}` : ''}).` },
+      502
+    )
   }
 
   const result = await response.json()

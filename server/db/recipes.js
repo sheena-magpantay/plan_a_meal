@@ -5,16 +5,17 @@
 // same file, so both always show the same list.
 //
 // Each ingredient is [name, quantity, unit, estimated cost in pesos]. The cost
-// is for the whole quantity, not per unit.
+// is for the whole quantity, not per unit, and is only a fallback: see below.
 //
-// image is either a file in client/public/, e.g. 'recipes/chicken-adobo.jpg'
-// for client/public/recipes/chicken-adobo.jpg, or a full https:// URL. Leave it
-// as '' for no picture. A missing or broken image shows a placeholder instead.
+// image names a photo in client/src/assets/recipes/: 'recipes/chicken-adobo.jpg'
+// is client/src/assets/recipes/chicken-adobo.jpg (a .png or .webp with the same
+// name works too). It can also be a full https:// URL. Leave it as '' for no
+// picture. A missing or broken image shows a placeholder instead.
 //
 // calories is a rough estimate per serving, used for the home screen's
 // average. Adjust any of them freely.
 
-import { isSpoonMeasure } from './shoppingList.js'
+import { ingredientCost } from './shoppingList.js'
 
 const data = [
   // Filipino
@@ -547,8 +548,10 @@ const data = [
   },
 ]
 
-// Every recipe serves 4 unless it says otherwise. Ingredients measured in cups
-// or spoons carry no cost (see isSpoonMeasure in shoppingList.js).
+// Every recipe serves 4 unless it says otherwise. Each ingredient's cost is
+// worked out from the store prices in storeProducts.js (its share of the
+// pack, and nothing for cups and spoons); the cost written above is only used
+// for ingredients the store list does not know.
 const recipes = data.map((recipe) => ({
   servings: 4,
   ...recipe,
@@ -556,7 +559,7 @@ const recipes = data.map((recipe) => ({
     name,
     quantity,
     unit,
-    estimated_cost: isSpoonMeasure(unit) ? 0 : estimated_cost,
+    estimated_cost: ingredientCost(name, quantity, unit) ?? estimated_cost,
   })),
 }))
 
