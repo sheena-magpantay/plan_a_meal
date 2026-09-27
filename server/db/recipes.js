@@ -1,24 +1,6 @@
-// The recipe list: 40 dishes, Filipino, Chinese and Western.
-//
-// This is the single source of the starter recipes. db/seed.js loads it into
-// PostgreSQL, and the client's demo mode (client/src/api/mockApi.js) reads the
-// same file, so both always show the same list.
-//
-// Each ingredient is [name, quantity, unit, estimated cost in pesos]. The cost
-// is for the whole quantity, not per unit, and is only a fallback: see below.
-//
-// image names a photo in client/src/assets/recipes/: 'recipes/chicken-adobo.jpg'
-// is client/src/assets/recipes/chicken-adobo.jpg (a .png or .webp with the same
-// name works too). It can also be a full https:// URL. Leave it as '' for no
-// picture. A missing or broken image shows a placeholder instead.
-//
-// calories is a rough estimate per serving, used for the home screen's
-// average. Adjust any of them freely.
-
 import { ingredientCost } from './shoppingList.js'
 
 const data = [
-  // Filipino
   {
     name: 'Chicken Adobo', cuisine: 'Filipino', minutes: 45,
     image: 'recipes/chicken-adobo.jpg', calories: 450,
@@ -207,7 +189,6 @@ const data = [
     ],
   },
 
-  // Chinese
   {
     name: 'Sweet and Sour Pork', cuisine: 'Chinese', minutes: 45,
     image: 'recipes/sweet-and-sour-pork.jpg', calories: 500,
@@ -379,7 +360,6 @@ const data = [
     ],
   },
 
-  // Western
   {
     name: 'Spaghetti Bolognese', cuisine: 'Western', minutes: 60,
     image: 'recipes/spaghetti-bolognese.jpg', calories: 600,
@@ -548,10 +528,6 @@ const data = [
   },
 ]
 
-// Every recipe serves 4 unless it says otherwise. Each ingredient's cost is
-// worked out from the store prices in storeProducts.js (its share of the
-// pack, and nothing for cups and spoons); the cost written above is only used
-// for ingredients the store list does not know.
 const recipes = data.map((recipe) => ({
   servings: 4,
   ...recipe,

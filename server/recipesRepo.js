@@ -1,20 +1,9 @@
-// The data-access layer for recipes, ingredients, the meal plan and the
-// shopping list.
-//
-// Every query is parameterised: values go in the array, never into the string.
-// This is the single most important habit in database code, and it is what
-// stops "'; DROP TABLE recipes; --" in a form field from being a real problem.
-//
-// NUMERIC columns come back from pg as strings (so no precision is lost), which
-// is why quantity and cost are cast to double precision here: the client wants numbers.
-
 import { buildShoppingList, customItem } from './db/shoppingList.js'
 
 export const DAYS = [
   'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
 ]
 
-// The list page shows every recipe with its ingredient count and total cost.
 export async function listRecipes(pool) {
   const result = await pool.query(
     `SELECT r.id, r.name, r.cuisine, r.minutes, r.image, r.calories, r.custom,
@@ -46,8 +35,6 @@ export async function getRecipe(pool, id) {
   return { ...recipe.rows[0], ingredients: ingredients.rows }
 }
 
-// A recipe added on the Recipes screen. It starts with no ingredients; the
-// edit screen fills them in.
 export async function createRecipe(pool, { name, cuisine, minutes, calories, image }) {
   const { rows } = await pool.query(
     `INSERT INTO recipes (name, cuisine, minutes, calories, image, custom)
@@ -58,8 +45,6 @@ export async function createRecipe(pool, { name, cuisine, minutes, calories, ima
   return { ...rows[0], ingredients: [] }
 }
 
-// Only added recipes can be deleted. Its ingredients and meal plan entries go
-// with it (ON DELETE CASCADE). Returns false when there was no such recipe.
 export async function deleteRecipe(pool, id) {
   const { rowCount } = await pool.query(
     'DELETE FROM recipes WHERE id = $1 AND custom',
@@ -68,9 +53,6 @@ export async function deleteRecipe(pool, id) {
   return rowCount > 0
 }
 
-// Saving the edit screen replaces the whole ingredient list in one transaction,
-// so a failure halfway through never leaves a recipe with half its ingredients.
-// servings, when given, is saved too: how many people the amounts are for.
 export async function replaceIngredients(pool, id, ingredients, servings) {
   const client = await pool.connect()
   try {
@@ -104,13 +86,6 @@ export async function replaceIngredients(pool, id, ingredients, servings) {
   return getRecipe(pool, id)
 }
 
-// One week of the plan, sorted Monday to Sunday, then by when each recipe was
-// added. Each entry carries what the home screen shows: the recipe's name,
-// image, calories and total ingredient cost.
-//
-// week_start is not read back from the DATE column: pg would turn it into a
-// JavaScript Date at local midnight, which can shift it by a day depending on
-// time zone. It is the week that was asked for, so it is added from that.
 export async function listMealPlan(pool, weekStart) {
   const result = await pool.query(
     `SELECT m.id, m.recipe_id, m.day, m.added_at,
@@ -129,9 +104,6 @@ export async function listMealPlan(pool, weekStart) {
     .sort((a, b) => DAYS.indexOf(a.day) - DAYS.indexOf(b.day))
 }
 
-// Adding the same recipe to the same day of the same week twice is not an
-// error; it returns the entry that is already there. Returns null if the
-// recipe does not exist.
 export async function addToMealPlan(pool, { recipe_id, day, week_start }) {
   try {
     const result = await pool.query(
@@ -143,7 +115,6 @@ export async function addToMealPlan(pool, { recipe_id, day, week_start }) {
     )
     return { ...result.rows[0], week_start }
   } catch (error) {
-    // 23503 is a foreign key violation: no recipe with that id.
     if (error.code === '23503') return null
     throw error
   }
@@ -154,8 +125,6 @@ export async function removeFromMealPlan(pool, id) {
   return result.rowCount > 0
 }
 
-// Every ingredient of every recipe planned for the week, combined into one
-// list (see db/shoppingList.js), with each line's ticked state.
 export async function getShoppingList(pool, weekStart) {
   const lines = await pool.query(
     `SELECT i.name, i.quantity::double precision AS quantity, i.unit,
@@ -191,7 +160,6 @@ export async function getShoppingList(pool, weekStart) {
   )
 }
 
-// quantity null goes back to the list's own suggestion.
 export async function setShoppingItemQuantity(pool, { week_start, item_key, quantity }) {
   if (quantity == null) {
     await pool.query(
@@ -208,8 +176,6 @@ export async function setShoppingItemQuantity(pool, { week_start, item_key, quan
   return { week_start, item_key, quantity }
 }
 
-// Priced from the store catalog when the list is built; an item the catalog
-// does not know has no price here (the Supabase version asks the AI).
 export async function addShoppingItem(pool, { week_start, name, quantity, unit }) {
   const { rows } = await pool.query(
     `INSERT INTO shopping_items (week_start, name, quantity, unit)
@@ -221,7 +187,6 @@ export async function addShoppingItem(pool, { week_start, name, quantity, unit }
   return customItem(rows[0])
 }
 
-// Returns false when there was no such item. Its tick goes with it.
 export async function removeShoppingItem(pool, id) {
   const { rows } = await pool.query(
     'DELETE FROM shopping_items WHERE id = $1 RETURNING week_start',

@@ -12,9 +12,6 @@ import { SUPABASE_ENABLED } from "./supabase.js";
 export default function App() {
   return (
     <Routes>
-      {/* Login and sign up fill the screen, without the sidebar. They only
-          exist when Supabase is configured; otherwise there is nothing to
-          log in to. */}
       {SUPABASE_ENABLED && (
         <>
           <Route path="/login" element={<AuthPage mode="login" />} />
@@ -37,8 +34,6 @@ export default function App() {
   );
 }
 
-// Every app screen needs a signed-in user. Visitors without one go to the
-// login page, which sends them back here afterwards.
 function RequireAuth() {
   const { session, loading } = useAuth();
   const location = useLocation();

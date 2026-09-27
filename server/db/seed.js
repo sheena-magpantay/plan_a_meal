@@ -1,15 +1,3 @@
-// Load the 40 starter recipes from db/recipes.js into the database.
-//
-//   node --env-file=.env db/seed.js
-//
-// This starts with TRUNCATE, which also empties the meal plan and the shopping
-// list's ticks. That is correct
-// on your laptop and catastrophic against the database your live demo depends
-// on. Check which DATABASE_URL is loaded before you run it.
-//
-// It is a script rather than a seed.sql so the recipe list lives in one place,
-// db/recipes.js, which the client's demo mode reads as well.
-
 import { pool } from './pool.js'
 import recipes from './recipes.js'
 

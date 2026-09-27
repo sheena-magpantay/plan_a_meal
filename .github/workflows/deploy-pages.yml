@@ -11,9 +11,6 @@ name: Deploy client to GitHub Pages
 # is why they are repository VARIABLES rather than secrets:
 #
 #   Settings > Secrets and variables > Actions > Variables
-#     VITE_USE_MOCK_API   "false" once your Express API is deployed. Anything
-#                         else, including leaving it unset, keeps the simulated
-#                         backend on, which is the safe default for a template.
 #     VITE_API_BASE_URL   https://your-api.onrender.com   (no trailing slash)
 #     VITE_SUPABASE_URL       https://<project-ref>.supabase.co
 #     VITE_SUPABASE_ANON_KEY  the publishable key (never the secret one). With
@@ -89,7 +86,6 @@ jobs:
           # blank white page. Reading the name from the event means this keeps
           # working if you rename the repository.
           VITE_BASE_PATH: /${{ github.event.repository.name }}/
-          VITE_USE_MOCK_API: ${{ vars.VITE_USE_MOCK_API }}
           VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}

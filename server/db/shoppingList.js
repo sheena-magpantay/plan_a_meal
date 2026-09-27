@@ -1,20 +1,3 @@
-// Turns the ingredient lines of every recipe planned for a week into one
-// shopping list of things you can buy in a Philippine supermarket.
-//
-// Each ingredient is matched to a store product (db/storeProducts.js), its
-// recipe amounts are converted into that product's unit and added up, and the
-// total is rounded up to what the store sells. "0.5 cup + 3 tbsp" of soy sauce
-// from two recipes becomes one line: 1 bottle (385 ml). Onion and Onions, or
-// Garlic by the head and by the clove, end up on the same line.
-//
-// The cost is what those packages cost, not the recipes' estimated share.
-// Ingredients the catalog does not know (anything typed on the edit screen)
-// are still merged by name, with cups and spoons turned into ml, and keep the
-// recipes' estimated cost.
-//
-// Pure JavaScript with no database access, so recipesRepo.js and the client's
-// demo mode (client/src/api/mockApi.js) build the list the same way.
-
 import { PRODUCTS } from './storeProducts.js'
 
 const MASS = { g: 1, kg: 1000 }
@@ -36,13 +19,9 @@ const normalizeUnit = (unit) => {
 }
 
 const normalizeName = (name) => name.trim().toLowerCase().replace(/\s+/g, ' ')
-
-// "tomatoes" -> "tomato", "onions" -> "onion"; used when an exact name is not
-// in the catalog.
 const singular = (name) =>
   name.endsWith('oes') ? name.slice(0, -2) : name.endsWith('s') ? name.slice(0, -1) : name
 
-// name -> product, with any alias-specific overrides already applied
 const CATALOG = new Map()
 for (const product of PRODUCTS) {
   CATALOG.set(normalizeName(product.name), product)
@@ -57,7 +36,6 @@ function findProduct(name) {
   return CATALOG.get(key) ?? CATALOG.get(singular(key)) ?? null
 }
 
-// Converts one recipe amount into the product's unit, or null if it cannot.
 function toProductUnit(product, quantity, unit) {
   if (product.per?.[unit] != null) return quantity * product.per[unit]
   if (unit in MASS) {
@@ -84,7 +62,6 @@ function plural(word, count) {
   return /(ch|sh|x|s)$/.test(word) ? `${word}es` : `${word}s`
 }
 
-// 1500 g -> "1.5 kg", 385 ml -> "385 ml", 3.8 pc -> "4 pc" (you use whole pieces)
 function formatMeasure(value, unit) {
   if (unit === 'g') return value >= 1000 ? `${round(value / 1000)} kg` : `${Math.round(value)} g`
   if (unit === 'ml') return value >= 1000 ? `${round(value / 1000)} L` : `${Math.round(value)} ml`
@@ -92,9 +69,6 @@ function formatMeasure(value, unit) {
   return `${count} ${plural(unit, count)}`
 }
 
-// The cheapest mix of a 'sizes' product's packages holding at least `need`
-// pieces. Ties go to fewer packages. There are only two or three sizes and
-// small counts, so trying every mix is instant.
 function cheapestMix(options, need) {
   const target = Math.max(1, Math.ceil(need - EPSILON))
   let best = null
@@ -122,10 +96,6 @@ function cheapestMix(options, need) {
 const stepOf = (product) =>
   product.step ?? (product.unit === 'g' ? 50 : product.unit === 'ml' ? 100 : 1)
 
-// How the Grocery List counts a line when the user changes its quantity: in
-// what you actually buy. Whole bottles or packs, eggs, pieces or bunches, and
-// kg or L for meat and produce sold by weight. Returns the amount the list
-// would buy by itself, and the size of one +/- step.
 function buyingDefault(product, need) {
   if (product.kind === 'pack') {
     return { quantity: Math.max(1, Math.ceil(need / product.size - EPSILON)), step: 1 }
@@ -140,7 +110,6 @@ function buyingDefault(product, need) {
   return { quantity: amount / 1000, step: step / 1000 } // grams -> kg, ml -> L
 }
 
-// The unit name shown beside the quantity: "bottles", "eggs", "heads", "kg".
 function buyingUnit(product, quantity) {
   if (product.kind === 'pack') return plural(product.sold, quantity)
   if (product.kind === 'sizes') return plural(product.label, quantity)
@@ -148,12 +117,9 @@ function buyingUnit(product, quantity) {
   return product.unit === 'g' ? 'kg' : 'L'
 }
 
-// What `quantity` (in buying units) puts in the basket, what it costs at the
-// catalog's prices, and how much it holds in the product's own unit.
 function priceAt(product, quantity) {
   if (product.kind === 'sizes') {
     const mix = cheapestMix(product.options, quantity)
-    // Largest package first: "1 bundle (6 packs) + 2 packs"
     const amount = product.options
       .map((option, index) => ({ ...option, count: mix.counts[index] }))
       .filter((option) => option.count > 0)
@@ -183,7 +149,6 @@ function priceAt(product, quantity) {
     return { amount: `${count} ${plural(label, count)}`, cost: count * product.price, holds: count }
   }
 
-  // Loose weight or volume is priced per kg or per litre.
   const base = quantity * 1000
   return {
     amount: formatMeasure(base, product.unit),
@@ -192,7 +157,6 @@ function priceAt(product, quantity) {
   }
 }
 
-// The recipes' total need, said the way a person would: "7 eggs", "300 ml".
 function describeNeed(product, need) {
   if (product.unit === 'pc' && product.kind !== 'pack') {
     const count = Math.ceil(need - EPSILON)
@@ -201,8 +165,6 @@ function describeNeed(product, need) {
   return formatMeasure(need, product.unit)
 }
 
-// The small note under an item: a warning when the chosen quantity is less
-// than the recipes need, or how much of a package the recipes use.
 function usesNote(product, need, holds) {
   if (holds < need - EPSILON) return `recipes need ${describeNeed(product, need)}`
   if (product.kind === 'pack' && need < holds - EPSILON) {
@@ -215,8 +177,6 @@ function usesNote(product, need, holds) {
   return ''
 }
 
-// A line matched to a store product. `chosen` is the user's own quantity for
-// it this week, in buying units, or undefined to let the list decide.
 function productLine(product, need, chosen) {
   const { quantity: suggested, step } = buyingDefault(product, need)
   const quantity = chosen > 0 ? chosen : suggested
@@ -232,8 +192,6 @@ function productLine(product, need, chosen) {
   }
 }
 
-// A line the catalog does not know. Its cost is the recipes' own estimate,
-// scaled when the user changes the quantity.
 function unknownLine(group, chosen) {
   const byMeasure = group.base === 'g' || group.base === 'ml'
   const suggested = byMeasure ? Math.max(1, Math.round(group.need)) : Math.ceil(group.need - EPSILON)
@@ -253,15 +211,7 @@ function unknownLine(group, chosen) {
   }
 }
 
-// Ingredients measured in cups or spoons (a tablespoon of soy sauce, a
-// teaspoon of pepper) come from what is already in the kitchen, so a recipe
-// gives them no cost. The shopping list still prices the bottle or pack.
 export const isSpoonMeasure = (unit) => ['cup', 'tbsp', 'tsp'].includes(normalizeUnit(unit ?? ''))
-
-// What `quantity unit` of `name` costs as a share of its store price: 250 g
-// of a ₱380/kg pork belly is ₱95. This is a recipe ingredient's cost; the
-// shopping list, by contrast, charges for whole packages. 0 for cups and
-// spoons (see isSpoonMeasure), null when the store catalog does not know it.
 export function ingredientCost(name, quantity, unit) {
   if (isSpoonMeasure(unit)) return 0
   const product = findProduct(name)
@@ -273,25 +223,14 @@ export function ingredientCost(name, quantity, unit) {
     return round(amount * perPiece)
   }
   if (product.unit === 'pc') return round(amount * product.price)
-  return round((amount / 1000) * product.price) // loose weight or volume, priced per kg or L
+  return round((amount / 1000) * product.price)
 }
 
-// Whether the store catalog can price `quantity unit` of `name`. When it
-// cannot, the app asks for an estimate instead (see addShoppingItem).
 export function catalogPrices(name, quantity, unit) {
   const product = findProduct(name)
   return Boolean(product && toProductUnit(product, Number(quantity), normalizeUnit(unit ?? '')) != null)
 }
 
-// An item the user added to the list themselves ("Add an item" on the Grocery
-// List), not from a recipe: a name, a quantity and a unit. It is priced like
-// a recipe line: from the store catalog when the name is a known product
-// ("Soy sauce, 2 cups" becomes 2 bottles at the bottle price), otherwise from
-// the estimate saved with it. It stays its own line, never merged into a
-// recipe's. Its key is "custom:<id>", so ticks and quantity changes are saved
-// the same way as every other line.
-// row: { id, name, quantity, unit, estimated_cost }
-// chosen: the user's changed quantity for it, in buying units, if any
 export function customItem(row, checkedKeys = [], chosen) {
   const key = `custom:${row.id}`
   const quantity = Number(row.quantity) > 0 ? Number(row.quantity) : 1
@@ -318,7 +257,6 @@ export function customItem(row, checkedKeys = [], chosen) {
     amount: bought.amount,
     uses: '',
     estimated_cost: round(bought.cost),
-    // false when nothing could price it (no catalog match and no estimate)
     priced: need != null || estimate > 0,
     recipes: [],
     checked: checkedKeys.includes(key),
@@ -330,14 +268,6 @@ export function customItem(row, checkedKeys = [], chosen) {
   }
 }
 
-// lines: [{ name, quantity, unit, estimated_cost, recipe_name }]
-// checkedKeys: the item keys ticked for this week
-// customRows: the week's added items, see customItem
-// quantities: { item_key: quantity } the user set this week, in buying units
-//
-// Each recipe line also carries what the quantity editor needs: quantity,
-// unit, step, suggested_quantity (what the list would buy by itself) and
-// edited (true when the user's own quantity is in use).
 export function buildShoppingList(lines, checkedKeys, customRows = [], quantities = {}) {
   const groups = new Map()
 
@@ -359,9 +289,6 @@ export function buildShoppingList(lines, checkedKeys, customRows = [], quantitie
       addTo(`product:${normalizeName(product.name)}`, { product, name: product.name }, line, inProductUnit)
       continue
     }
-
-    // Not in the catalog: merge by name and measure. Cups and spoons become
-    // ml and kg becomes g, so a store-friendly unit is shown.
     const base = unit in MASS ? 'g' : unit in VOLUME ? 'ml' : unit
     const factor = unit in MASS ? MASS[unit] : unit in VOLUME ? VOLUME[unit] : 1
     const name = singular(normalizeName(line.name))

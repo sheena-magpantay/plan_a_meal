@@ -1,12 +1,3 @@
-// Groups shopping list items the way a store is laid out, by the words in the
-// ingredient's name. Ingredients are free text (the edit screen lets you type
-// anything), so this is a best guess: anything it does not recognise goes under
-// "Other". Add words to a list to teach it.
-//
-// Order matters: the first list with a matching word wins. Pantry goes first
-// so "Fish sauce", "Chicken stock", "Coconut milk" and "Tomato paste" land in
-// Pantry, and Protein before Dairy so "Cream dory fillets" is fish, not cream.
-
 const RULES = [
   [
     "Pantry",
@@ -42,8 +33,6 @@ const RULES = [
 
 export const CATEGORY_ORDER = ["Pantry", "Protein", "Produce", "Dairy & Eggs", "Other"];
 
-// Whole words only, with an optional plural, so "egg" matches "Eggs" but not
-// "Eggplant".
 const escape = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const MATCHERS = RULES.map(([category, words]) => [
   category,

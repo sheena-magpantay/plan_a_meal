@@ -1,30 +1,11 @@
-// The Supabase backend: each signed-in user's own week, saved to their account.
-//
-// Same function names, same return types and the same shape of failure as
-// mockApi.js and httpApi.js, so the screens cannot tell the difference.
-//
-// Recipes come from server/db/recipes.js, bundled with the client like demo
-// mode. Supabase stores only what a user changes (supabase/schema.sql):
-//   meal_plan           their weekly plan
-//   shopping_checks     items ticked on the shopping list
-//   recipe_ingredients  their own edits to a recipe's ingredients
-//   shopping_items      things they added to the shopping list by hand
-//   user_recipes        recipes they added themselves (ids from 1001)
-//   shopping_quantities quantities they changed on the shopping list
-// Row Level Security limits every query to the signed-in user's rows, which
-// is why nothing below filters by user.
-
 import { supabase } from '../supabase.js'
 import starterRecipes from '../../../server/db/recipes.js'
 import { buildShoppingList, customItem, catalogPrices } from '../../../server/db/shoppingList.js'
 import { AI_ENABLED, estimateItemCost } from './ai.js'
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-
-// Ids are 1 to 40 in list order, the same as demo mode and the seeded database.
 const withIds = (recipeId, ingredients) =>
   ingredients.map((ingredient, index) => ({ id: `${recipeId}-${index + 1}`, ...ingredient }))
-
 const bundledRecipes = starterRecipes.map((recipe, index) => ({
   id: index + 1,
   name: recipe.name,
@@ -35,12 +16,9 @@ const bundledRecipes = starterRecipes.map((recipe, index) => ({
   servings: recipe.servings ?? 4,
   ingredients: withIds(index + 1, recipe.ingredients),
 }))
-
 const totalCost = (ingredients) =>
   ingredients.reduce((sum, item) => sum + Number(item.estimated_cost), 0)
 
-// Supabase returns { data, error } instead of throwing; the screens expect a
-// thrown Error with a readable message, like the other two backends.
 function unwrap({ data, error }) {
   if (error) throw new Error(error.message)
   return data
@@ -54,11 +32,7 @@ async function currentUserId() {
 }
 
 const bundledById = (id) => bundledRecipes.find((recipe) => String(recipe.id) === String(id))
-
 const RECIPE_COLUMNS = 'id, name, cuisine, minutes, calories, image, servings, ingredients'
-
-// A row of user_recipes in the same shape as a bundled recipe. custom marks
-// it as the user's own, which is what lets the screens offer Delete.
 const fromRow = (row) => ({
   id: row.id,
   name: row.name,
@@ -86,20 +60,16 @@ async function getOwnRecipe(id) {
   return fromRow(row)
 }
 
-// The bundled recipe, with this user's saved ingredients (and servings) in
-// place of the defaults if they have edited it.
 const applyEdit = (recipe, edited, servings) =>
   edited
     ? { ...recipe, servings: servings ?? recipe.servings, ingredients: withIds(recipe.id, edited) }
     : recipe
 
-// Every recipe the user has edited, as Map(recipe_id -> ingredients).
 async function loadEdits() {
   const rows = unwrap(await supabase.from('recipe_ingredients').select('recipe_id, ingredients'))
   return new Map(rows.map((row) => [row.recipe_id, row.ingredients]))
 }
 
-// Bundled recipes (with the user's edits), then the user's own.
 async function recipesWithEdits() {
   const [edits, own] = await Promise.all([loadEdits(), loadOwnRecipes()])
   return [...bundledRecipes.map((recipe) => applyEdit(recipe, edits.get(recipe.id))), ...own]
@@ -127,7 +97,6 @@ export async function getRecipe(id) {
   return applyEdit(recipe, row?.ingredients, row?.servings)
 }
 
-// servings: how many people these amounts are for (optional, kept if left out)
 export async function updateRecipeIngredients(id, ingredients, servings) {
   const cleaned = ingredients.map((ingredient) => ({
     name: ingredient.name,
@@ -138,7 +107,6 @@ export async function updateRecipeIngredients(id, ingredients, servings) {
 
   const recipe = bundledById(id)
   if (!recipe) {
-    // The user's own recipe keeps its ingredients in its own row.
     const rows = unwrap(
       await supabase
         .from('user_recipes')
@@ -184,13 +152,10 @@ export async function listMealPlan(weekStart) {
         total_cost: totalCost(recipe.ingredients),
       }
     })
-    // A recipe removed from recipes.js, or deleted, drops out instead of crashing.
     .filter(Boolean)
     .sort((a, b) => DAYS.indexOf(a.day) - DAYS.indexOf(b.day) || a.id - b.id)
 }
 
-// recipe: { name, cuisine, minutes, calories, image }. Starts with no
-// ingredients; the edit screen fills them in.
 export async function createRecipe({ name, cuisine, minutes, calories, image }) {
   const row = unwrap(
     await supabase
@@ -209,8 +174,6 @@ export async function createRecipe({ name, cuisine, minutes, calories, image }) 
   return fromRow(row)
 }
 
-// Only the user's own recipes can be deleted. It leaves their plan too;
-// meal_plan has no foreign key to user_recipes, so that is done here.
 export async function deleteRecipe(id) {
   if (bundledById(id)) throw new Error('Only recipes you added can be deleted')
   unwrap(await supabase.from('meal_plan').delete().eq('recipe_id', id))
@@ -229,8 +192,6 @@ export async function addToMealPlan({ recipe_id, day, week_start }) {
 
   const entry = { user_id: await currentUserId(), recipe_id: recipe.id, week_start, day }
   const { data, error } = await supabase.from('meal_plan').insert(entry).select().single()
-  // Same rule as the database: one entry per recipe per day, per week. Adding
-  // it again is not an error; it returns the one already there.
   if (error?.code === '23505') {
     return unwrap(
       await supabase
@@ -281,8 +242,6 @@ export async function getShoppingList(weekStart) {
   )
 }
 
-// quantity is in the line's buying unit (see server/db/shoppingList.js);
-// null goes back to the list's own suggestion.
 export async function setShoppingItemQuantity({ week_start, item_key, quantity }) {
   if (quantity == null) {
     unwrap(await supabase.from('shopping_quantities').delete().match({ week_start, item_key }))
@@ -299,10 +258,6 @@ export async function setShoppingItemQuantity({ week_start, item_key, quantity }
   return { week_start, item_key, quantity }
 }
 
-// item: { week_start, name, quantity, unit }. Returns the new list line.
-// The cost is the app's: store catalog prices when the name is a known
-// product, otherwise an AI estimate, saved with the item. If the AI is not
-// available the item is still added, without a price.
 export async function addShoppingItem({ week_start, name, quantity, unit }) {
   const item = { name: name.trim(), quantity: Number(quantity), unit: (unit ?? '').trim() }
   let estimated_cost = 0
@@ -324,7 +279,6 @@ export async function removeShoppingItem(id) {
     await supabase.from('shopping_items').delete().eq('id', id).select('week_start')
   )
   if (deleted.length === 0) throw new Error('Not found')
-  // Its tick, if it had one, would otherwise stay behind in shopping_checks.
   unwrap(
     await supabase
       .from('shopping_checks')

@@ -1,42 +1,3 @@
-// How each ingredient is sold in a Philippine supermarket (SM, Puregold,
-// Robinsons), so the shopping list asks for things you can actually buy:
-// "1 bottle (385 ml)" of soy sauce, not "0.5 cup + 3 tbsp".
-//
-// Prices are in pesos, taken in September 2026 from the online stores of SM
-// Supermarket, Shopwise, S&R and WalterMart (Makati branches; SM, Shopwise and
-// S&R through MetroMart): the median across stores of their regular, non-sale
-// prices, scaled to the pack size below. Pork, chicken and beef are Fresh
-// Options Meatshop's prices (freshoptions.ph). Puregold has no online shop to
-// read, so it is not included. Rock sugar, Sichuan peppercorns, char siu, snow
-// peas and Chinese chives were not sold online and keep earlier estimates.
-// Prices change; edit them, or add products, freely.
-//
-// pack(name, category, sold, size, unit, price, options)
-//   Sold in fixed packages. `size` is how much one package holds, in `unit`
-//   ('g', 'ml' or 'pc'); `price` is per package.
-//
-// loose(name, category, unit, price, options)
-//   Sold by weight or by the piece. `price` is per kg when unit is 'g', per
-//   litre for 'ml', and per piece for 'pc'. `step` is the smallest amount you
-//   would ask for (default 50 g, 100 ml or 1 piece); `label` names a piece,
-//   e.g. 'head' for garlic or 'bunch' for pechay.
-//
-// sizes(name, category, label, options, extras)
-//   Sold only in a few package sizes, counted in pieces: eggs by the dozen or
-//   half dozen, instant noodles by the pack or bundle. `label` names one piece
-//   ('egg', 'pack'); each option is { sold, size, price } with `size` in
-//   pieces. The shopping list buys the cheapest mix that covers what the
-//   recipes need.
-//
-// Options that turn recipe amounts into the product's unit:
-//   perMl  how many product units one ml of the recipe amount is
-//          (grams per ml for sugar measured in cups; cubes per ml of stock)
-//   perG   the same for recipe amounts in grams or kg
-//   per    named recipe units, e.g. { clove: 0.1 } (a clove is 0.1 head)
-//   also   other ingredient names that mean this product. An entry can be
-//          [name, { overrides }] when that name converts differently, like
-//          cooked rice, where a cup needs far less raw rice.
-
 const PANTRY = 'Pantry'
 const PROTEIN = 'Protein'
 const DAIRY = 'Dairy & Eggs'
@@ -50,7 +11,6 @@ const sizes = (name, category, label, options, extras = {}) =>
   ({ name, category, kind: 'sizes', unit: 'pc', label, options, ...extras })
 
 export const PRODUCTS = [
-  // Pantry: sauces and condiments
   pack('Soy sauce', PANTRY, 'bottle', 385, 'ml', 24),
   pack('Light soy sauce', PANTRY, 'bottle', 500, 'ml', 130),
   pack('Dark soy sauce', PANTRY, 'bottle', 500, 'ml', 95),
@@ -64,8 +24,6 @@ export const PRODUCTS = [
   pack('Tomato sauce', PANTRY, 'pouch', 250, 'g', 30, { perMl: 1.05 }),
   pack('Tomato paste', PANTRY, 'sachet', 150, 'g', 34, { perMl: 1.1 }),
   pack('Crushed tomatoes', PANTRY, 'can', 411, 'g', 86),
-  // Stands in for truffle oil, which is an expensive import here (₱673 for
-  // 50 ml): any recipe asking for truffle oil or truffle sauce buys this kit.
   pack('Royal Creamy Mushroom Truffle Sauce Kit', PANTRY, 'kit', 520, 'g', 210, {
     perMl: 1,
     per: { kit: 520, pack: 520, bottle: 520 },
@@ -79,8 +37,6 @@ export const PRODUCTS = [
   pack('Peanut butter', PANTRY, 'jar', 340, 'g', 167, { perMl: 1.05 }),
   pack('Honey', PANTRY, 'bottle', 250, 'g', 262, { perMl: 1.4 }),
   pack('Shaoxing wine', PANTRY, 'bottle', 640, 'ml', 238, { also: ['chinese cooking wine'] }),
-
-  // Pantry: cans, oils, stock
   pack('Coconut milk', PANTRY, 'can', 400, 'ml', 74, { also: ['gata'] }),
   pack('Coconut cream', PANTRY, 'can', 400, 'ml', 72.5, { also: ['kakang gata'] }),
   pack('Pineapple chunks', PANTRY, 'can', 432, 'g', 70),
@@ -88,12 +44,9 @@ export const PRODUCTS = [
   pack('Cooking oil', PANTRY, 'bottle', 1000, 'ml', 146, { also: ['vegetable oil', 'canola oil', 'oil'] }),
   pack('Sesame oil', PANTRY, 'bottle', 150, 'ml', 139),
   pack('Olive oil', PANTRY, 'bottle', 250, 'ml', 248),
-  // Stock is bought as broth cubes: one cube makes about 500 ml.
   pack('Chicken broth cubes', PANTRY, 'pack', 6, 'pc', 38, { perMl: 1 / 500, also: ['chicken stock', 'chicken broth'] }),
   pack('Beef broth cubes', PANTRY, 'pack', 6, 'pc', 38, { perMl: 1 / 500, also: ['beef stock', 'beef broth'] }),
   pack('Sparkling water', PANTRY, 'can', 330, 'ml', 37.5, { also: ['soda water', 'club soda'] }),
-
-  // Pantry: dry goods (perMl is grams per ml, for amounts given in cups or spoons)
   pack('Sugar', PANTRY, 'pack', 1000, 'g', 90, { perMl: 0.85, also: ['white sugar'] }),
   pack('Brown sugar', PANTRY, 'pack', 1000, 'g', 80, { perMl: 0.9 }),
   pack('Rock sugar', PANTRY, 'pack', 400, 'g', 90),
@@ -107,8 +60,6 @@ export const PRODUCTS = [
   pack('Raisins', PANTRY, 'pack', 100, 'g', 55),
   pack('Dried taro leaves', PANTRY, 'pack', 100, 'g', 67),
   pack('Tamarind soup mix', PANTRY, 'sachet', 22, 'g', 14.75, { per: { pack: 22 }, also: ['sinigang mix'] }),
-
-  // Pantry: spices
   pack('Annatto powder', PANTRY, 'sachet', 10, 'g', 12.25, { perMl: 0.4, also: ['achuete powder', 'atsuete powder'] }),
   pack('Chinese five-spice', PANTRY, 'pack', 30, 'g', 14.25, { perMl: 0.45, also: ['five-spice powder', 'five spice'] }),
   pack('Ground black pepper', PANTRY, 'bottle', 28, 'g', 43.75, { perMl: 0.45, also: ['black pepper', 'pepper'] }),
@@ -120,8 +71,6 @@ export const PRODUCTS = [
   pack('Dried thyme', PANTRY, 'bottle', 10, 'g', 14, { perMl: 0.2, also: ['thyme'] }),
   pack('Kasubha', PANTRY, 'pack', 5, 'g', 14, { perMl: 0.15, also: ['safflower'] }),
   pack('Dried red chilies', PANTRY, 'pack', 50, 'g', 55, { per: { pc: 0.5 } }),
-
-  // Pantry: rice, noodles, bread
   loose('Rice', PANTRY, 'g', 78, { step: 1000, perMl: 0.83, also: ['white rice', ['cooked rice', { perMl: 0.27 }]] }),
   pack('Glutinous rice', PANTRY, 'pack', 1000, 'g', 106.5, { perMl: 0.83, also: ['malagkit', 'sticky rice'] }),
   pack('Canton noodles', PANTRY, 'pack', 500, 'g', 131, { also: ['pancit canton'] }),
@@ -130,7 +79,7 @@ export const PRODUCTS = [
     { sold: 'bundle', size: 6, price: 88 },
   ], {
     per: { pack: 1, bundle: 6 },
-    perG: 1 / 80, // one pack is 80 g
+    perG: 1 / 80, 
     also: ['instant canton', 'instant pancit', 'lucky me pancit canton', 'pancit canton instant'],
   }),
   pack('Egg noodles', PANTRY, 'pack', 400, 'g', 95),
@@ -141,8 +90,6 @@ export const PRODUCTS = [
   pack('Dumpling wrappers', PANTRY, 'pack', 50, 'pc', 45, { also: ['wonton wrappers', 'molo wrappers', 'siomai wrappers'] }),
   pack('Burger buns', PANTRY, 'pack', 6, 'pc', 58, { also: ['hamburger buns'] }),
   pack('White bread', PANTRY, 'loaf', 20, 'pc', 84, { per: { slice: 1 }, also: ['bread', 'sliced bread'] }),
-
-  // Protein: meat and fish by weight at the counter (price per kg)
   loose('Chicken', PROTEIN, 'g', 239.75, { step: 100, also: ['chicken cut-ups'] }),
   loose('Whole chicken', PROTEIN, 'pc', 245.75, { perG: 1 / 1200 }),
   loose('Chicken breast', PROTEIN, 'g', 294.75, { step: 100 }),
@@ -165,8 +112,6 @@ export const PRODUCTS = [
   pack('Bacon', PROTEIN, 'pack', 200, 'g', 152),
   pack('Cream dory fillets', PROTEIN, 'pack', 500, 'g', 137, { also: ['cream dory'] }),
   pack('Firm tofu', PROTEIN, 'pack', 250, 'g', 35.5, { also: ['tofu', 'tokwa'] }),
-
-  // Dairy & eggs
   sizes('Eggs', DAIRY, 'egg', [
     { sold: 'half dozen', size: 6, price: 64 },
     { sold: 'dozen', size: 12, price: 126 },
@@ -178,9 +123,6 @@ export const PRODUCTS = [
   pack('Cheddar', DAIRY, 'pack', 250, 'g', 231, { also: ['cheddar cheese'] }),
   pack('Cheddar slices', DAIRY, 'pack', 10, 'pc', 194, { per: { slice: 1 } }),
   pack('Parmesan', DAIRY, 'pack', 100, 'g', 124.5, { perMl: 0.4, also: ['parmesan cheese'] }),
-
-  // Produce: by the piece, head or bunch (price each). perG lets an amount by
-  // weight ("500 g onions") count as pieces: a medium onion is about 100 g.
   loose('Onion', PRODUCE, 'pc', 20, { perG: 1 / 100, also: ['onions', 'red onion', 'white onion'] }),
   loose('Garlic', PRODUCE, 'pc', 18, { label: 'head', perG: 1 / 40, per: { clove: 0.1 }, also: ['bawang'] }),
   loose('Tomato', PRODUCE, 'pc', 22, { perG: 1 / 100, also: ['tomatoes'] }),
@@ -207,8 +149,6 @@ export const PRODUCTS = [
   loose('Celery', PRODUCE, 'pc', 300, { label: 'bunch', per: { stalk: 0.125 } }),
   loose('Asparagus', PRODUCE, 'pc', 200, { label: 'bunch' }),
   loose('Rosemary', PRODUCE, 'pc', 32, { label: 'pack', per: { bunch: 1 } }),
-
-  // Produce: by weight or in packs
   loose('Ginger', PRODUCE, 'g', 360, { step: 50, also: ['luya'] }),
   loose('Potatoes', PRODUCE, 'g', 290, { step: 250, per: { pc: 200 }, also: ['potato', 'patatas'] }),
   loose('Squash', PRODUCE, 'g', 130, { step: 250, also: ['kalabasa'] }),
