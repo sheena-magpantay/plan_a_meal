@@ -1,3 +1,13 @@
+// The simulated backend.
+//
+// Same function names, same return types, and the same shape of failure as
+// httpApi.js, so your components cannot tell the difference. Data lives in the
+// visitor's own browser and goes no further.
+//
+// This exists so the template's GitHub Pages link works on day one and so you
+// can build the interface before your API is deployed. It is NOT a finished
+// project. See content/extending-your-app page 3.
+
 import starterRecipes from '../../../server/db/recipes.js'
 import { buildShoppingList, customItem } from '../../../server/db/shoppingList.js'
 
