@@ -3,8 +3,6 @@ import { LogOut } from "lucide-react";
 import { useAuth, displayName, signOut } from "../auth.jsx";
 import { SUPABASE_ENABLED } from "../supabase.js";
 
-const providerNames = { email: "Email and password", google: "Google" };
-
 export default function Profile() {
   const { user } = useAuth();
   const [busy, setBusy] = useState(false);
@@ -26,14 +24,12 @@ export default function Profile() {
     setBusy(true);
     setError("");
     try {
-      await signOut(); // AuthProvider sees the session end and shows the login page
+      await signOut(); 
     } catch (err) {
       setError(`Couldn't log out: ${err.message}`);
       setBusy(false);
     }
   }
-
-  const provider = user?.app_metadata?.provider ?? "email";
 
   return (
     <section>
@@ -44,8 +40,6 @@ export default function Profile() {
           <dd>{displayName(user)}</dd>
           <dt className="text-label text-muted">Email</dt>
           <dd>{user?.email}</dd>
-          <dt className="text-label text-muted">Signed in with</dt>
-          <dd>{providerNames[provider] ?? provider}</dd>
         </dl>
         <p className="text-muted profileNote">
           Your weekly plan, shopping list ticks and ingredient edits are saved to this account.
