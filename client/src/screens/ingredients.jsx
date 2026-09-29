@@ -4,6 +4,7 @@ import { Minus, Plus } from "lucide-react";
 import { getRecipe, updateRecipeIngredients } from "../api/index.js";
 import { peso } from "../format.js";
 import { priceIngredient, isSpoonMeasure } from "../pricing.js";
+import LoadingLabel, { PRICING_STEPS } from "../components/LoadingLabel.jsx";
 
 const EMPTY_FORM = { name: "", quantity: "", unit: "" };
 
@@ -255,7 +256,7 @@ export default function RecipeIngredients() {
             </p>
           )}
           <button type="submit" className="btn btn-accent" disabled={adding}>
-            {adding ? "Pricing…" : "Add an ingredient"}
+            {adding ? <LoadingLabel messages={PRICING_STEPS} /> : "Add an ingredient"}
           </button>
           <p className="text-muted formHint">
             The cost is worked out for you from typical Philippine store prices. Cups and spoons

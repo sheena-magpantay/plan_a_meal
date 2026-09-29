@@ -564,6 +564,62 @@ body:has(.recipeDialog[open]) {
   flex: 1;
 }
 
+.aiRow .btn {
+  flex: none;
+}
+
+/* "Checking store prices..." inside a busy button, the three dots fading in
+   one after another. The width fits the longest message, so the button does
+   not jump as the messages change. */
+.loadingLabel {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  min-width: 10.5em;
+  white-space: nowrap;
+}
+
+.loadingDots span {
+  animation: loadingDot 1.2s infinite;
+  opacity: 0;
+}
+
+.loadingDots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.loadingDots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes loadingDot {
+  0%,
+  20% {
+    opacity: 0;
+  }
+  40%,
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Plain "..." for people who have asked their device for less motion */
+@media (prefers-reduced-motion: reduce) {
+  .loadingDots span {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+/* A busy button still reads clearly: the usual disabled fade is too faint */
+.btn:disabled:has(.loadingLabel) {
+  opacity: 0.85;
+  cursor: progress;
+}
+
 .aiBox .errorText {
   margin: 0;
 }

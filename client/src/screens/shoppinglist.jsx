@@ -12,6 +12,7 @@ import { peso } from "../format.js";
 import { currentWeekStart, formatWeekRange } from "../week.js";
 import { CATEGORY_ORDER, categorize } from "../categories.js";
 import { costToBuy } from "../shopping.js";
+import LoadingLabel, { PRICING_STEPS } from "../components/LoadingLabel.jsx";
 
 // The filter tabs above the list. The summary and Download always cover the
 // whole list; the filter only changes what is shown.
@@ -387,7 +388,13 @@ function AddItemForm({ weekStart, onAdded }) {
         ))}
       </datalist>
       <button type="submit" className="btn btn-primary" disabled={saving}>
-        <Plus size={16} strokeWidth={2.5} aria-hidden="true" /> {saving ? "Pricing…" : "Add"}
+        {saving ? (
+          <LoadingLabel messages={PRICING_STEPS} />
+        ) : (
+          <>
+            <Plus size={16} strokeWidth={2.5} aria-hidden="true" /> Add
+          </>
+        )}
       </button>
       {error && (
         <p className="errorText addItemError" role="alert">

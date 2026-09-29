@@ -12,6 +12,7 @@ import {
 import { AI_ENABLED, generateRecipe } from "../api/ai.js";
 import { storeCost, isSpoonMeasure } from "../pricing.js";
 import RecipeImage from "../components/RecipeImage.jsx";
+import LoadingLabel, { AI_RECIPE_STEPS } from "../components/LoadingLabel.jsx";
 import { peso } from "../format.js";
 import { DAYS, currentWeekStart } from "../week.js";
 
@@ -627,7 +628,13 @@ function NewRecipeDialog({ onClose }) {
                 onClick={suggest}
                 disabled={aiBusy || !aiPrompt.trim()}
               >
-                {aiBusy ? "Thinking…" : aiIngredients ? "Try again" : "Suggest"}
+                {aiBusy ? (
+                  <LoadingLabel messages={AI_RECIPE_STEPS} />
+                ) : aiIngredients ? (
+                  "Try again"
+                ) : (
+                  "Suggest"
+                )}
               </button>
             </div>
             {aiError && (

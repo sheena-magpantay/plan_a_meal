@@ -226,9 +226,15 @@ export function ingredientCost(name, quantity, unit) {
   return round((amount / 1000) * product.price)
 }
 
+function handAddedNeed(product, quantity, unit) {
+  const need = toProductUnit(product, quantity, unit)
+  if (need != null || unit !== 'pc') return need
+  return product.kind === 'pack' ? quantity * product.size : null
+}
+
 export function catalogPrices(name, quantity, unit) {
   const product = findProduct(name)
-  return Boolean(product && toProductUnit(product, Number(quantity), normalizeUnit(unit ?? '')) != null)
+  return Boolean(product && handAddedNeed(product, Number(quantity), normalizeUnit(unit ?? '')) != null)
 }
 
 export function customItem(row, checkedKeys = [], chosen) {
@@ -236,7 +242,7 @@ export function customItem(row, checkedKeys = [], chosen) {
   const quantity = Number(row.quantity) > 0 ? Number(row.quantity) : 1
   const unit = normalizeUnit(row.unit ?? '')
   const product = findProduct(row.name)
-  const need = product ? toProductUnit(product, quantity, unit) : null
+  const need = product ? handAddedNeed(product, quantity, unit) : null
   const estimate = Number(row.estimated_cost) || 0
 
   let bought
