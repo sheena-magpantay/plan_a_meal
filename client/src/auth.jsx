@@ -25,7 +25,7 @@ export function displayName(user) {
 
 function friendly(error) {
   const message = error?.message ?? String(error);
-  if (/invalid login credentials/i.test(message)) return new Error("Wrong username or password.");
+  if (/invalid login credentials/i.test(message)) return new Error("Wrong email or password.");
   if (/email not confirmed/i.test(message)) {
     return new Error("Confirm your email first. Check your inbox for the link.");
   }
@@ -35,15 +35,8 @@ function friendly(error) {
   return new Error(message);
 }
 
-export async function signIn(identifier, password) {
-  let email = identifier.trim();
-  if (!email.includes("@")) {
-    const { data, error } = await supabase.rpc("email_for_username", { name: email });
-    if (error) throw friendly(error);
-    if (!data) throw new Error("Wrong username or password.");
-    email = data;
-  }
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+export async function signIn(email, password) {
+  const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
   if (error) throw friendly(error);
 }
 

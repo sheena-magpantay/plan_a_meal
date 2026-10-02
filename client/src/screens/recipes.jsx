@@ -36,15 +36,9 @@ const MINE = "mine";
 const EMPTY_RECIPE = { name: "", cuisine: "", minutes: "", calories: "", image: "" };
 
 export default function Recipes() {
-  // ?day=Monday comes from a day's Add button on the home screen: that day is
-  // preselected when choosing a day. ?recipe=5 comes from a suggested meal and
-  // opens that recipe's details.
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
-
-  // Set by the edit screen after Save. Shown for this visit only: the effect
-  // clears it from the history entry so a reload does not show it again.
   const [savedName] = useState(() => location.state?.savedRecipe ?? "");
   useEffect(() => {
     if (location.state?.savedRecipe) {
@@ -56,11 +50,11 @@ export default function Recipes() {
   const recipeParam = Number(searchParams.get("recipe"));
 
   const [recipes, setRecipes] = useState([]);
-  const [status, setStatus] = useState("loading"); // loading | ready | error
+  const [status, setStatus] = useState("loading"); 
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState("default");
-  const [cuisine, setCuisine] = useState(""); // "" means all cuisines, MINE means added ones
+  const [cuisine, setCuisine] = useState(""); 
   const [creating, setCreating] = useState(false);
   const [openRecipeId, setOpenRecipeId] = useState(
     Number.isInteger(recipeParam) && recipeParam > 0 ? recipeParam : null
@@ -182,8 +176,6 @@ export default function Recipes() {
         ))}
       </ul>
 
-      {/* key: each recipe gets a fresh dialog, so a late close event from the
-          previous one cannot close the one that just opened */}
       {openRecipeId !== null && (
         <RecipeDetails
           key={openRecipeId}
@@ -233,8 +225,6 @@ function RecipeCard({ recipe, defaultDay, onOpen }) {
   return (
     <li className="card recipeCard">
       <RecipeImage src={recipe.image} />
-      {/* The button's ::after stretches over the whole card, so clicking
-          anywhere on it opens the details. Add to Plan and Edit sit above it. */}
       <h2 className="recipeName">
         <button type="button" className="recipeOpen" onClick={onOpen}>
           {recipe.name}
@@ -299,13 +289,10 @@ function RecipeCard({ recipe, defaultDay, onOpen }) {
   );
 }
 
-// Pop-up with the recipe's ingredients and estimated cost. Uses <dialog>, so
-// Escape closes it and keyboard focus stays inside while it is open.
 function RecipeDetails({ recipeId, onClose, onDeleted }) {
   const dialogRef = useRef(null);
   const [recipe, setRecipe] = useState(null);
   const [error, setError] = useState("");
-  // Delete asks once more before it happens: idle -> confirming -> deleting
   const [deleteState, setDeleteState] = useState("idle");
   const [deleteError, setDeleteError] = useState("");
 
@@ -326,9 +313,6 @@ function RecipeDetails({ recipeId, onClose, onDeleted }) {
     };
   }, [recipeId]);
 
-  // Tell the parent straight away rather than waiting for the dialog's close
-  // event, which the browser delivers late (or not at all while the tab is in
-  // the background). Escape still arrives through onClose below.
   const close = () => {
     dialogRef.current.close();
     onClose();
@@ -356,8 +340,6 @@ function RecipeDetails({ recipeId, onClose, onDeleted }) {
       className="recipeDialog"
       aria-labelledby="recipe-dialog-title"
       onClose={onClose}
-      // The dialog itself has no padding, so a click whose target is the
-      // dialog element landed on the backdrop outside the content.
       onClick={(event) => event.target === dialogRef.current && close()}
     >
       <div className="dialogBody">
@@ -395,7 +377,6 @@ function RecipeDetails({ recipeId, onClose, onDeleted }) {
                     <span className="text-muted">
                       {ingredient.quantity} {ingredient.unit}
                     </span>
-                    {/* Cups and spoons have no cost */}
                     <span>
                       {isSpoonMeasure(ingredient.unit) ? "" : peso.format(ingredient.estimated_cost)}
                     </span>
@@ -479,13 +460,6 @@ function validateRecipe(form) {
   return "";
 }
 
-// Pop-up for a new recipe's details. Saving opens the edit screen, where the
-// ingredients go in, so there is one place to manage ingredients.
-//
-// With Supabase on, "Let AI suggest one" asks Gemini (through the
-// generate-recipe Edge Function) for a whole recipe: it fills in the fields
-// here and its ingredients are saved with the recipe, ready to check on the
-// edit screen.
 function NewRecipeDialog({ onClose }) {
   const dialogRef = useRef(null);
   const navigate = useNavigate();
@@ -496,12 +470,11 @@ function NewRecipeDialog({ onClose }) {
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiBusy, setAiBusy] = useState(false);
   const [aiError, setAiError] = useState("");
-  const [aiIngredients, setAiIngredients] = useState(null); // from the last suggestion
+  const [aiIngredients, setAiIngredients] = useState(null); 
 
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog.open) dialog.showModal();
-    // showModal focuses the first button (Close); start in the first box instead.
     dialog.querySelector("input")?.focus();
   }, []);
 
@@ -529,8 +502,6 @@ function NewRecipeDialog({ onClose }) {
         minutes: String(recipe.minutes),
         calories: recipe.calories ? String(recipe.calories) : "",
       }));
-      // Store prices where the catalog knows the ingredient, so AI recipes
-      // are costed the same way as everything else; Gemini's guess otherwise.
       setAiIngredients(
         recipe.ingredients.map((item) => ({
           ...item,
@@ -569,8 +540,6 @@ function NewRecipeDialog({ onClose }) {
 
     if (!aiIngredients?.length) return navigate(`/recipes/${recipe.id}`);
 
-    // The recipe exists now. If its AI ingredients cannot be saved, the edit
-    // screen gets them as unsaved changes instead, so nothing is lost.
     try {
       await updateRecipeIngredients(recipe.id, aiIngredients);
       navigate(`/recipes/${recipe.id}`, { state: { ai: { saved: true } } });
@@ -614,7 +583,6 @@ function NewRecipeDialog({ onClose }) {
                 maxLength={300}
                 value={aiPrompt}
                 onChange={(event) => setAiPrompt(event.target.value)}
-                // Enter asks the AI instead of submitting the whole form.
                 onKeyDown={(event) => {
                   if (event.key === "Enter") {
                     event.preventDefault();

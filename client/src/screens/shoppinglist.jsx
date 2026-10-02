@@ -1,21 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Download, Plus, Minus, X } from "lucide-react";
-import {
-  getShoppingList,
-  setShoppingItemChecked,
-  setShoppingItemQuantity,
-  addShoppingItem,
-  removeShoppingItem,
-} from "../api/index.js";
+import {getShoppingList, setShoppingItemChecked, setShoppingItemQuantity, addShoppingItem, removeShoppingItem} from "../api/index.js";
 import { peso } from "../format.js";
 import { currentWeekStart, formatWeekRange } from "../week.js";
 import { CATEGORY_ORDER, categorize } from "../categories.js";
 import { costToBuy } from "../shopping.js";
 import LoadingLabel, { PRICING_STEPS } from "../components/LoadingLabel.jsx";
 
-// The filter tabs above the list. The summary and Download always cover the
-// whole list; the filter only changes what is shown.
 const FILTERS = {
   all: { label: "All", test: () => true, empty: "" },
   unchecked: {
@@ -27,22 +19,16 @@ const FILTERS = {
 };
 
 const EMPTY_ITEM = { name: "", quantity: "", unit: "" };
-
-// Suggestions for the unit box; any other unit can be typed.
 const UNITS = ["pc", "pack", "bottle", "can", "sachet", "bundle", "dozen", "kg", "g", "L", "ml", "bunch", "head"];
-
 const byName = (a, b) => a.name.localeCompare(b.name);
 
 function groupByCategory(items) {
   return CATEGORY_ORDER.map((category) => [
     category,
-    // Store products carry their own category; typed-in ingredients the
-    // catalog does not know are sorted by name.
     items.filter((item) => (item.category ?? categorize(item.name)) === category),
   ]).filter(([, list]) => list.length > 0);
 }
 
-// Saves the list as a plain text file, grouped the same way as the screen.
 function downloadList(items, weekStart) {
   const total = costToBuy(items);
   const lines = ["Plan a Meal: Grocery List", `Week of ${formatWeekRange(weekStart)}`, ""];
@@ -56,8 +42,6 @@ function downloadList(items, weekStart) {
     lines.push("");
   }
   lines.push(`Quantity: ${items.length} items`, `Total cost: ${peso.format(total)}`);
-
-  // The BOM makes older Windows Notepad read the peso sign correctly.
   const blob = new Blob(["﻿" + lines.join("\r\n")], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -70,12 +54,12 @@ function downloadList(items, weekStart) {
 export default function ShoppingList() {
   const [weekStart] = useState(currentWeekStart);
   const [items, setItems] = useState([]);
-  const [status, setStatus] = useState("loading"); // loading | ready | error
+  const [status, setStatus] = useState("loading"); 
   const [error, setError] = useState("");
   const [saveError, setSaveError] = useState("");
   const [filter, setFilter] = useState("all");
   const [removingKey, setRemovingKey] = useState(null);
-  const [savingKey, setSavingKey] = useState(null); // item whose quantity is saving
+  const [savingKey, setSavingKey] = useState(null); 
 
   useEffect(() => {
     let cancelled = false;
@@ -95,8 +79,6 @@ export default function ShoppingList() {
     };
   }, [weekStart]);
 
-  // Ticks show immediately and are saved in the background; if saving fails,
-  // the tick is undone and the error shown.
   async function toggle(item) {
     const checked = !item.checked;
     const setChecked = (value) =>
@@ -114,9 +96,6 @@ export default function ShoppingList() {
     }
   }
 
-  // quantity is in the item's buying unit; null goes back to the suggestion.
-  // The whole list is reloaded after, because the cost is worked out from the
-  // store prices on the server side of the API (server/db/shoppingList.js).
   async function changeQuantity(item, quantity) {
     setSavingKey(item.key);
     setSaveError("");
@@ -188,7 +167,6 @@ export default function ShoppingList() {
         weekStart={weekStart}
         onAdded={(item) => {
           setItems((current) => [...current, item].sort(byName));
-          // A new item is unchecked; make sure it is visible.
           if (filter === "checked") setFilter("all");
         }}
       />
@@ -240,7 +218,6 @@ export default function ShoppingList() {
                         />
                         <span>
                           <span className="groceryName">{item.name}</span>
-                          {/* A ticked item is done: only its crossed-out name stays. */}
                           {!item.checked && (
                             <span className="groceryFor text-muted">
                               {item.custom ? "Added by you" : `For ${item.recipes.join(", ")}`}
@@ -269,8 +246,6 @@ export default function ShoppingList() {
                           </span>
                         </>
                       )}
-                      {/* Only items added by hand can be removed; recipe items
-                          leave when their recipe leaves the plan. */}
                       {item.custom ? (
                         <button
                           type="button"
@@ -309,8 +284,6 @@ export default function ShoppingList() {
   );
 }
 
-// One row: name, quantity, unit, Add. Only the name is required; quantity
-// defaults to 1 and unit to pieces. There is no cost box: the app prices it.
 function AddItemForm({ weekStart, onAdded }) {
   const [form, setForm] = useState(EMPTY_ITEM);
   const [error, setError] = useState("");
@@ -333,8 +306,6 @@ function AddItemForm({ weekStart, onAdded }) {
     setSaving(true);
     setError("");
     try {
-      // The cost is the app's: store prices, or an AI estimate for anything
-      // the store list does not know (see addShoppingItem in src/api).
       const item = await addShoppingItem({
         week_start: weekStart,
         name,
@@ -405,9 +376,6 @@ function AddItemForm({ weekStart, onAdded }) {
   );
 }
 
-// − [ 2 ] + bottles, with what that buys underneath ("2 bottles (385 ml
-// each)"). The buttons move by one step: a bottle, 6 eggs, 0.1 kg of meat.
-// A typed amount is saved on Enter or when the box loses focus.
 function QuantityEditor({ item, saving, onChange }) {
   const [draft, setDraft] = useState(String(item.quantity));
 

@@ -15,8 +15,6 @@ import {
   formatShortDate,
 } from "../week.js";
 
-// Four recipes that are not already in this week's plan, picked at random on
-// each visit.
 function pickSuggestions(recipes, plan, count = 4) {
   const planned = new Set(plan.map((entry) => entry.recipe_id));
   const choices = recipes.filter((recipe) => !planned.has(recipe.id));
@@ -27,7 +25,6 @@ function pickSuggestions(recipes, plan, count = 4) {
   return choices.slice(0, count);
 }
 
-// Total calories of each planned day, averaged over the days that have meals.
 function averageDailyCalories(plan) {
   const perDay = {};
   for (const entry of plan) perDay[entry.day] = (perDay[entry.day] ?? 0) + entry.calories;
@@ -37,8 +34,6 @@ function averageDailyCalories(plan) {
 
 export default function Home() {
   const { user } = useAuth();
-  // Fixed for as long as the page is open; a reload after Monday picks up the
-  // new week, which starts empty.
   const [weekStart] = useState(currentWeekStart);
   const [plan, setPlan] = useState([]);
   const [shopping, setShopping] = useState([]);
@@ -73,7 +68,6 @@ export default function Home() {
     setRemoveError("");
     try {
       await removeFromMealPlan(entry.id);
-      // The shopping list is built from the plan, so it changes too.
       const [planRows, shoppingRows] = await Promise.all([
         listMealPlan(weekStart),
         getShoppingList(weekStart),
@@ -96,7 +90,6 @@ export default function Home() {
     );
   }
 
-  // Same as the Grocery List's total cost: what is still left to buy.
   const budget = costToBuy(shopping);
   const calories = averageDailyCalories(plan);
   const checkedCount = shopping.filter((item) => item.checked).length;

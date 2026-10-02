@@ -5,13 +5,11 @@ import logo from "../assets/logo.png";
 import { useAuth, signIn, signUp, signInWithGoogle } from "../auth.jsx";
 
 const EMPTY_FORM = { username: "", email: "", password: "", confirm: "" };
-
-// Same rule as the profiles table in supabase/schema.sql.
 const USERNAME_PATTERN = /^[A-Za-z0-9_]{3,20}$/;
 
 function validate(mode, form) {
   if (mode === "login") {
-    if (!form.username.trim()) return "Enter your username or email.";
+    if (!form.email.trim()) return "Enter your email.";
     if (!form.password) return "Enter your password.";
     return "";
   }
@@ -24,9 +22,6 @@ function validate(mode, form) {
   return "";
 }
 
-// mode is "login" or "signup". Both screens share the wireframe's layout:
-// logo, title, fields, one primary button, a link to the other screen, then
-// "OR" and Continue with Google.
 export default function AuthPage({ mode }) {
   const isLogin = mode === "login";
   const { session } = useAuth();
@@ -34,9 +29,8 @@ export default function AuthPage({ mode }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const [sentTo, setSentTo] = useState(""); // email a confirmation link went to
+  const [sentTo, setSentTo] = useState("");
 
-  // Signed in (just now, or already): go where they were headed.
   if (session) return <Navigate to={location.state?.from ?? "/"} replace />;
 
   function updateField(event) {
@@ -52,7 +46,7 @@ export default function AuthPage({ mode }) {
     setError("");
     try {
       if (isLogin) {
-        await signIn(form.username, form.password);
+        await signIn(form.email, form.password);
       } else {
         const email = form.email.trim();
         const { needsConfirmation } = await signUp({
@@ -62,8 +56,6 @@ export default function AuthPage({ mode }) {
         });
         if (needsConfirmation) setSentTo(email);
       }
-      // On success the session arrives through AuthProvider and the
-      // <Navigate> above takes over.
     } catch (err) {
       setError(err.message);
     } finally {
@@ -75,7 +67,7 @@ export default function AuthPage({ mode }) {
     setBusy(true);
     setError("");
     try {
-      await signInWithGoogle(); // leaves the page for Google
+      await signInWithGoogle();
     } catch (err) {
       setError(err.message);
       setBusy(false);
@@ -107,27 +99,27 @@ export default function AuthPage({ mode }) {
         <h1 className="authTitle">{isLogin ? "LOGIN" : "Create an account"}</h1>
 
         <form className="authForm" onSubmit={submit} noValidate>
-          <input
-            className="input"
-            name="username"
-            placeholder={isLogin ? "Username or email" : "Username"}
-            aria-label={isLogin ? "Username or email" : "Username"}
-            autoComplete="username"
-            value={form.username}
-            onChange={updateField}
-          />
           {!isLogin && (
             <input
               className="input"
-              name="email"
-              type="email"
-              placeholder="Email Address"
-              aria-label="Email address"
-              autoComplete="email"
-              value={form.email}
+              name="username"
+              placeholder="Username"
+              aria-label="Username"
+              autoComplete="username"
+              value={form.username}
               onChange={updateField}
             />
           )}
+          <input
+            className="input"
+            name="email"
+            type="email"
+            placeholder="Email Address"
+            aria-label="Email address"
+            autoComplete="email"
+            value={form.email}
+            onChange={updateField}
+          />
           <input
             className="input"
             name="password"
@@ -182,7 +174,6 @@ export default function AuthPage({ mode }) {
   );
 }
 
-// Google's "G" mark, in Google's own colours as their branding guide asks.
 function GoogleIcon() {
   return (
     <svg className="googleIcon" viewBox="0 0 48 48" aria-hidden="true">

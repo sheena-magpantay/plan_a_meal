@@ -7,20 +7,9 @@ import { priceIngredient, isSpoonMeasure } from "../pricing.js";
 import LoadingLabel, { PRICING_STEPS } from "../components/LoadingLabel.jsx";
 
 const EMPTY_FORM = { name: "", quantity: "", unit: "" };
-
-// Suggestions for the unit box; any other unit can be typed.
 const UNITS = ["g", "kg", "ml", "L", "cup", "tbsp", "tsp", "pc", "clove", "head", "bunch", "can", "pack", "bottle", "stalk", "slice"];
-
 const MAX_SERVINGS = 100;
-
 const round2 = (value) => Math.round(value * 100) / 100;
-
-// Each row needs a stable React key. Saved rows have an id; rows added on this
-// screen do not until Save, so they get a temporary one.
-//
-// A row keeps its amount and cost as entered for `servings` people. What is
-// shown is scaled to the servings chosen now, always from those numbers, so
-// going 4 -> 6 -> 4 people gives back exactly what was there.
 const toRow = (ingredient, servings) => ({
   key: ingredient.id ? String(ingredient.id) : crypto.randomUUID(),
   name: ingredient.name,
@@ -28,8 +17,6 @@ const toRow = (ingredient, servings) => ({
   base: { quantity: ingredient.quantity, cost: ingredient.estimated_cost, servings },
 });
 
-// The row's amount and cost for `servings` people. Cups and spoons have no
-// cost (see isSpoonMeasure in server/db/shoppingList.js).
 function scaled(row, servings) {
   const factor = servings / row.base.servings;
   return {
@@ -44,10 +31,6 @@ export default function RecipeIngredients() {
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  // Set when arriving from "Let AI suggest one" (see NewRecipeDialog in
-  // recipes.jsx): { saved: true }, or { draft, error } if saving failed.
-  // Kept for this visit only; the effect below clears it from the history
-  // entry so a reload does not show the notice again.
   const [ai] = useState(() => location.state?.ai);
 
   useEffect(() => {
@@ -57,14 +40,14 @@ export default function RecipeIngredients() {
   const [recipe, setRecipe] = useState(null);
   const [rows, setRows] = useState([]);
   const [servings, setServings] = useState(4);
-  const [status, setStatus] = useState("loading"); // loading | ready | error
+  const [status, setStatus] = useState("loading"); 
   const [error, setError] = useState("");
 
   const [form, setForm] = useState(EMPTY_FORM);
   const [formError, setFormError] = useState("");
   const [adding, setAdding] = useState(false);
 
-  const [saveState, setSaveState] = useState("idle"); // idle | dirty | saving | saved | error
+  const [saveState, setSaveState] = useState("idle"); 
   const [saveError, setSaveError] = useState("");
 
   useEffect(() => {
@@ -77,8 +60,6 @@ export default function RecipeIngredients() {
         setRecipe(row);
         setServings(serves);
         if (ai?.draft && row.ingredients.length === 0) {
-          // The AI's ingredients could not be saved: offer them as unsaved
-          // changes, so one press of Save keeps them.
           setRows(ai.draft.map((ingredient) => toRow(ingredient, serves)));
           setSaveState("dirty");
         } else {
@@ -117,8 +98,6 @@ export default function RecipeIngredients() {
       return setFormError("Enter a quantity above 0.");
     }
 
-    // The cost is the app's, not typed in (see src/pricing.js). The amount
-    // entered is for the servings shown now.
     setAdding(true);
     setFormError("");
     const estimated_cost = (await priceIngredient({ name, quantity, unit })) ?? 0;
@@ -143,8 +122,6 @@ export default function RecipeIngredients() {
         servings
       );
       setSaveState("saved");
-      // Back to the list, which reloads and shows the new count and cost.
-      // On failure it stays here with the error, so no edits are lost.
       navigate("/recipes", { state: { savedRecipe: recipe.name } });
     } catch (err) {
       setSaveError(err.message);
@@ -314,8 +291,6 @@ export default function RecipeIngredients() {
   );
 }
 
-// Serves − [ 4 ] + people. The buttons move by one; a typed number is used on
-// Enter or when the box loses focus.
 function ServingsPicker({ servings, onChange }) {
   const [draft, setDraft] = useState(String(servings));
 
@@ -326,7 +301,7 @@ function ServingsPicker({ servings, onChange }) {
   function commit() {
     const next = Number(draft);
     if (Number.isInteger(next) && next >= 1 && next <= MAX_SERVINGS) onChange(next);
-    else setDraft(String(servings)); // not a usable number: put it back
+    else setDraft(String(servings)); 
   }
 
   return (
