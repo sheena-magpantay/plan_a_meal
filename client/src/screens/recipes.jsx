@@ -86,6 +86,10 @@ export default function Recipes() {
     .filter((recipe) => `${recipe.name} ${recipe.cuisine}`.toLowerCase().includes(search))
     .sort(SORTS[sort].compare);
 
+  const gridRef = useRef(null);
+  const cardKeys = visible.map((recipe) => `${recipe.id}-${planningDay}`).join(",");
+  useRevealOnScroll(gridRef, cardKeys);
+
   return (
     <section>
       <div className="pageHeader">
@@ -165,7 +169,7 @@ export default function Recipes() {
         </p>
       )}
 
-      <ul className="recipeGrid">
+      <ul className="recipeGrid" ref={gridRef}>
         {visible.map((recipe) => (
           <RecipeCard
             key={`${recipe.id}-${planningDay}`}
@@ -180,6 +184,7 @@ export default function Recipes() {
         <RecipeDetails
           key={openRecipeId}
           recipeId={openRecipeId}
+          defaultDay={planningDay}
           onClose={() => {
             setOpenRecipeId((current) => (current === openRecipeId ? null : current));
             // Drop ?recipe= so a reload does not open it again.
@@ -198,11 +203,41 @@ export default function Recipes() {
   );
 }
 
-function RecipeCard({ recipe, defaultDay, onOpen }) {
+function useRevealOnScroll(listRef, deps) {
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries
+          .filter((entry) => entry.isIntersecting)
+          .forEach((entry, i) => {
+            entry.target.style.setProperty("--reveal-delay", `${i * 70}ms`);
+            entry.target.classList.add("is-visible");
+            observer.unobserve(entry.target);
+          });
+      },
+      { rootMargin: "0px 0px -40px 0px" }
+    );
+
+    for (const card of list.children) {
+      if (!card.classList.contains("is-visible")) observer.observe(card);
+    }
+    return () => observer.disconnect();
+  }, [listRef, deps]);
+}
+
+function useAddToPlan(recipeId, defaultDay) {
   const [choosingDay, setChoosingDay] = useState(false);
   const [day, setDay] = useState(defaultDay);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+
+  function toggle() {
+    setChoosingDay((open) => !open);
+    setMessage("");
+  }
 
   async function confirmDay(event) {
     event.preventDefault();
@@ -211,7 +246,7 @@ function RecipeCard({ recipe, defaultDay, onOpen }) {
     setSaving(true);
     setMessage("");
     try {
-      await addToMealPlan({ recipe_id: recipe.id, day, week_start: currentWeekStart() });
+      await addToMealPlan({ recipe_id: recipeId, day, week_start: currentWeekStart() });
       setMessage(`Added to ${day}`);
       setChoosingDay(false);
       setDay(defaultDay);
@@ -221,6 +256,42 @@ function RecipeCard({ recipe, defaultDay, onOpen }) {
       setSaving(false);
     }
   }
+
+  return { choosingDay, toggle, day, setDay, saving, message, confirmDay };
+}
+
+function DayPicker({ recipeName, plan }) {
+  return (
+    <form className="dayPicker" onSubmit={plan.confirmDay}>
+      <select
+        className="input"
+        aria-label={`Day to cook ${recipeName}`}
+        value={plan.day}
+        onChange={(event) => plan.setDay(event.target.value)}
+      >
+        <option value="" disabled>
+          Choose a Day
+        </option>
+        {DAYS.map((name) => (
+          <option key={name} value={name}>
+            {name}
+          </option>
+        ))}
+      </select>
+      <button
+        type="submit"
+        className="btn btn-primary iconBtn"
+        aria-label="Confirm day"
+        disabled={!plan.day || plan.saving}
+      >
+        <Check size={16} strokeWidth={2.5} />
+      </button>
+    </form>
+  );
+}
+
+function RecipeCard({ recipe, defaultDay, onOpen }) {
+  const plan = useAddToPlan(recipe.id, defaultDay);
 
   return (
     <li className="card recipeCard">
@@ -239,11 +310,8 @@ function RecipeCard({ recipe, defaultDay, onOpen }) {
         <button
           type="button"
           className="btn btn-primary"
-          aria-expanded={choosingDay}
-          onClick={() => {
-            setChoosingDay((open) => !open);
-            setMessage("");
-          }}
+          aria-expanded={plan.choosingDay}
+          onClick={plan.toggle}
         >
           Add to Plan
         </button>
@@ -252,45 +320,20 @@ function RecipeCard({ recipe, defaultDay, onOpen }) {
         </Link>
       </div>
 
-      {choosingDay && (
-        <form className="dayPicker" onSubmit={confirmDay}>
-          <select
-            className="input"
-            aria-label={`Day to cook ${recipe.name}`}
-            value={day}
-            onChange={(event) => setDay(event.target.value)}
-          >
-            <option value="" disabled>
-              Choose a Day
-            </option>
-            {DAYS.map((name) => (
-              <option key={name} value={name}>
-                {name}
-              </option>
-            ))}
-          </select>
-          <button
-            type="submit"
-            className="btn btn-primary iconBtn"
-            aria-label="Confirm day"
-            disabled={!day || saving}
-          >
-            <Check size={16} strokeWidth={2.5} />
-          </button>
-        </form>
-      )}
+      {plan.choosingDay && <DayPicker recipeName={recipe.name} plan={plan} />}
 
-      {message && (
+      {plan.message && (
         <p className="cardMessage text-muted" role="status">
-          {message}
+          {plan.message}
         </p>
       )}
     </li>
   );
 }
 
-function RecipeDetails({ recipeId, onClose, onDeleted }) {
+function RecipeDetails({ recipeId, defaultDay, onClose, onDeleted }) {
   const dialogRef = useRef(null);
+  const plan = useAddToPlan(recipeId, defaultDay);
   const [recipe, setRecipe] = useState(null);
   const [error, setError] = useState("");
   const [deleteState, setDeleteState] = useState("idle");
@@ -400,6 +443,17 @@ function RecipeDetails({ recipeId, onClose, onDeleted }) {
               </p>
             )}
 
+            {plan.choosingDay && (
+              <div className="dialogDayPicker">
+                <DayPicker recipeName={recipe.name} plan={plan} />
+              </div>
+            )}
+            {plan.message && (
+              <p className="cardMessage dialogPlanMessage text-muted" role="status">
+                {plan.message}
+              </p>
+            )}
+
             <div className="dialogActions">
               {recipe.custom &&
                 (deleteState === "idle" ? (
@@ -433,7 +487,15 @@ function RecipeDetails({ recipeId, onClose, onDeleted }) {
               <Link className="btn btn-accent" to={`/recipes/${recipe.id}`}>
                 Edit ingredients
               </Link>
-              <button type="button" className="btn btn-primary" onClick={close}>
+              <button
+                type="button"
+                className="btn btn-primary"
+                aria-expanded={plan.choosingDay}
+                onClick={plan.toggle}
+              >
+                Add to Plan
+              </button>
+              <button type="button" className="btn btn-outline" onClick={close}>
                 Close
               </button>
             </div>

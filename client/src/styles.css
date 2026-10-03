@@ -1,7 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500&family=Poppins:wght@400;500;600&family=Qwigley&display=swap");
 
 :root {
-  /* Color palette */
   --color-primary: #394634;
   --color-accent: #dde2d4;
   --color-bg: #e9dfce;
@@ -13,7 +12,6 @@
   --color-border: #d4cfc4;
   --color-error: #a33a2a;
 
-  /* Typography */
   --font-heading: "Playfair Display", Georgia, serif;
   --font-body: "Poppins", system-ui, sans-serif;
   --font-script: "Qwigley", cursive;
@@ -22,17 +20,14 @@
   --text-body: 16px;
   --text-label: 12px;
 
-  /* Spacing */
-  --space-1: 8px;  /* tight */
-  --space-3: 24px; /* screen edge */
-  --space-4: 32px; /* standard */
+  --space-1: 8px;
+  --space-3: 24px;
+  --space-4: 32px;
 
-  /* Shape */
   --radius-md: 12px;
   --radius-lg: 24px;
   --radius-pill: 999px;
 
-  /* Sidebar */
   --sidebar-width: 120px;
   --sidebar-pad-top: 0px;
   --logo-size: 130px;
@@ -47,7 +42,6 @@ body {
   line-height: 1.5;
 }
 
-/* Type scale: Heading 36 / Title 24 / Body 16 / Label 12 */
 h1,
 .text-heading {
   font-family: var(--font-heading);
@@ -81,14 +75,12 @@ h2,
   color: var(--color-text-2);
 }
 
-/* Script wordmark, e.g. "Plan A Meal" */
 .logo {
   font-family: var(--font-script);
   font-weight: 400;
   line-height: 1;
 }
 
-/* Cards: white surface, soft border, large radius */
 .card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -96,7 +88,6 @@ h2,
   padding: var(--space-3);
 }
 
-/* Buttons: pill shape. Primary (dark green), outline, and accent (sage) */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -140,7 +131,6 @@ h2,
   font-size: var(--text-label);
 }
 
-/* Square-ish button holding only an icon, e.g. the day picker's check */
 .iconBtn {
   padding: 8px 12px;
 }
@@ -150,7 +140,6 @@ h2,
   cursor: not-allowed;
 }
 
-/* Keyboard focus ring; never remove it without a replacement */
 .btn:focus-visible,
 .input:focus-visible,
 .item:focus-visible {
@@ -158,7 +147,6 @@ h2,
   outline-offset: 2px;
 }
 
-/* Text inputs and selects: pill shape to match the buttons */
 .input {
   box-sizing: border-box;
   min-width: 0;
@@ -182,7 +170,6 @@ h2,
   font-size: 14px;
 }
 
-/* Page content sits beside the fixed sidebar */
 .container {
   box-sizing: border-box;
   min-height: 100vh;
@@ -192,7 +179,6 @@ h2,
   flex-direction: column;
 }
 
-/* "Plan a Meal" wordmark, top center of every screen */
 .brand {
   margin-bottom: var(--space-3);
   text-align: center;
@@ -200,7 +186,6 @@ h2,
   color: var(--color-primary);
 }
 
-/* Lighter panel that holds the current screen; fills the rest of the height */
 .screen {
   flex: 1;
   background: var(--color-bg-light);
@@ -209,8 +194,6 @@ h2,
 }
 
 .brandName {
-  /* Qwigley leaves ~0.27em of empty space below its letters; pull the
-     tagline up so it sits right under the script */
   margin: 0 0 -0.25em;
   font-family: var(--font-script);
   font-size: 56px;
@@ -232,7 +215,6 @@ h2,
   color: var(--color-text-2);
 }
 
-/* Screen title on the left, search or actions on the right */
 .pageHeader {
   display: flex;
   flex-wrap: wrap;
@@ -258,8 +240,6 @@ h2,
   font-size: 14px;
 }
 
-/* Recipes screen: search box, cuisine filter, sort dropdown and Add a recipe
-   side by side */
 .toolbar {
   display: flex;
   align-items: center;
@@ -312,7 +292,22 @@ h2,
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  transition: border-color 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    opacity 0.5s ease var(--reveal-delay, 0ms),
+    transform 0.5s cubic-bezier(0.22, 1, 0.36, 1) var(--reveal-delay, 0ms);
+}
+
+.recipeGrid > .recipeCard:not(.is-visible) {
+  opacity: 0;
+  transform: translateY(24px) scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .recipeGrid > .recipeCard:not(.is-visible) {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .recipeCard:hover {
@@ -325,7 +320,6 @@ h2,
   margin: 0;
 }
 
-/* Recipe photo, or a placeholder when there is none */
 .recipeImage {
   display: block;
   width: 100%;
@@ -335,7 +329,6 @@ h2,
   background: var(--color-accent);
 }
 
-/* Wider and shorter in the details pop-up, so the ingredients stay in view */
 .recipeImageLarge {
   aspect-ratio: 16 / 7;
 }
@@ -353,8 +346,6 @@ h2,
   opacity: 0.6;
 }
 
-/* The recipe name is the button that opens the details. Its ::after covers
-   the whole card, so the card is clickable anywhere. */
 .recipeOpen {
   padding: 0;
   border: 0;
@@ -381,8 +372,6 @@ h2,
   outline-offset: 2px;
 }
 
-/* Buttons sit at the bottom so they line up across a row of cards, and above
-   the card-wide click area so they still work */
 .recipeActions {
   position: relative;
   z-index: 1;
@@ -393,8 +382,6 @@ h2,
   padding-top: var(--space-3);
 }
 
-/* Empty space in these rows passes clicks through to the card; only the
-   buttons and dropdown inside catch them */
 .recipeActions,
 .dayPicker {
   pointer-events: none;
@@ -430,7 +417,21 @@ h2,
   font-size: 14px;
 }
 
-/* Recipe details pop-up */
+.dialogDayPicker {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-3);
+}
+
+.dialogDayPicker .dayPicker {
+  width: min(320px, 100%);
+}
+
+.dialogPlanMessage {
+  margin-top: var(--space-3);
+  text-align: right;
+}
+
 .recipeDialog {
   width: min(560px, calc(100vw - 32px));
   max-height: calc(100vh - 48px);
@@ -446,7 +447,6 @@ h2,
   background: rgb(38 37 31 / 0.5);
 }
 
-/* Keep the page behind still while the pop-up is open */
 body:has(.recipeDialog[open]) {
   overflow: hidden;
 }
@@ -499,7 +499,6 @@ body:has(.recipeDialog[open]) {
   margin-top: var(--space-3);
 }
 
-/* Delete recipe: red outline, then solid red to confirm */
 .btnDanger {
   border-color: var(--color-error);
   color: var(--color-error);
@@ -514,7 +513,6 @@ body:has(.recipeDialog[open]) {
   margin-top: var(--space-3);
 }
 
-/* Add a recipe pop-up */
 .newRecipeForm {
   gap: 12px;
 }
@@ -536,7 +534,6 @@ body:has(.recipeDialog[open]) {
   width: 100%;
 }
 
-/* "Let AI suggest one" at the top of the Add a recipe pop-up */
 .aiBox {
   display: flex;
   flex-direction: column;
@@ -568,9 +565,6 @@ body:has(.recipeDialog[open]) {
   flex: none;
 }
 
-/* "Checking store prices..." inside a busy button, the three dots fading in
-   one after another. The width fits the longest message, so the button does
-   not jump as the messages change. */
 .loadingLabel {
   display: inline-flex;
   align-items: baseline;
@@ -606,7 +600,6 @@ body:has(.recipeDialog[open]) {
   }
 }
 
-/* Plain "..." for people who have asked their device for less motion */
 @media (prefers-reduced-motion: reduce) {
   .loadingDots span {
     animation: none;
@@ -614,7 +607,6 @@ body:has(.recipeDialog[open]) {
   }
 }
 
-/* A busy button still reads clearly: the usual disabled fade is too faint */
 .btn:disabled:has(.loadingLabel) {
   opacity: 0.85;
   cursor: progress;
@@ -636,7 +628,6 @@ body:has(.recipeDialog[open]) {
   gap: 12px;
 }
 
-/* Edit ingredients screen: form on the left, list on the right */
 .editor {
   display: grid;
   grid-template-columns: minmax(240px, 300px) 1fr;
@@ -674,7 +665,6 @@ body:has(.recipeDialog[open]) {
   text-align: right;
 }
 
-/* Serves − [ 4 ] + people, above the ingredient list */
 .servingsPicker {
   display: flex;
   align-items: center;
@@ -694,7 +684,6 @@ body:has(.recipeDialog[open]) {
   font-size: var(--text-title);
 }
 
-/* Shown on Recipes when arriving from a day's Add button */
 .planningBanner {
   margin: 0 0 var(--space-3);
   padding: 12px var(--space-3);
@@ -709,7 +698,6 @@ body:has(.recipeDialog[open]) {
   font-weight: 600;
 }
 
-/* Home: greeting and stats on the left, shopping list card on the right */
 .homeTop {
   display: grid;
   grid-template-columns: 1fr minmax(260px, 360px);
@@ -778,11 +766,10 @@ body:has(.recipeDialog[open]) {
   font-size: 14px;
 }
 
-/* "—— This week's meals ——" */
 .dividerHeading {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: 6px;
   margin: 0;
   font-size: var(--text-title);
 }
@@ -791,7 +778,13 @@ body:has(.recipeDialog[open]) {
 .dividerHeading::after {
   content: "";
   flex: 1;
-  border-top: 1px solid var(--color-text-2);
+  height: 3px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(to right, transparent, var(--color-primary));
+}
+
+.dividerHeading::after {
+  background: linear-gradient(to left, transparent, var(--color-primary));
 }
 
 .weekRange {
@@ -897,7 +890,6 @@ body:has(.recipeDialog[open]) {
   outline-offset: 2px;
 }
 
-/* Add sits at the bottom of the column */
 .dayAdd {
   margin-top: auto;
   align-self: stretch;
@@ -947,11 +939,84 @@ body:has(.recipeDialog[open]) {
   text-decoration: none;
 }
 
-.suggestion:hover span {
+.suggestion:hover .suggestionName {
   text-decoration: underline;
 }
 
-/* Grocery list */
+.suggestionMedia {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+}
+
+.suggestionMedia .recipeImage {
+  transition: transform 0.4s ease;
+}
+
+.suggestionInfo {
+  position: absolute;
+  inset: auto 0 0 0;
+  margin: 0;
+  padding: var(--space-3) 12px 10px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  font-size: 13px;
+  color: var(--color-on-primary);
+  background: linear-gradient(to top, rgba(57, 70, 52, 0.95), rgba(57, 70, 52, 0.75) 60%, transparent);
+  opacity: 0;
+  transform: translateY(100%);
+  transition:
+    opacity 0.25s ease,
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.suggestionInfo li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.suggestion:hover .suggestionInfo,
+.suggestion:focus-visible .suggestionInfo {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.suggestion:hover .suggestionMedia .recipeImage,
+.suggestion:focus-visible .suggestionMedia .recipeImage {
+  transform: scale(1.05);
+}
+
+@media (hover: none) {
+  .suggestionMedia {
+    overflow: visible;
+  }
+
+  .suggestionInfo {
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 2px 10px;
+    padding: 6px 0 0;
+    font-size: 12px;
+    color: var(--color-text-2);
+    background: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .suggestionInfo,
+  .suggestionMedia .recipeImage {
+    transition: none;
+  }
+}
+
 .emptyState {
   display: flex;
   flex-direction: column;
@@ -967,17 +1032,11 @@ body:has(.recipeDialog[open]) {
   margin-top: var(--space-1);
 }
 
-/* Two columns of categories. CSS columns rather than a grid, so a long
-   Pantry group sits beside several shorter ones instead of leaving gaps.
-   "320px 2" means: at most 2 columns, each at least 320px wide, so narrow
-   screens drop to one column by themselves. */
 .groceryGroups {
   columns: 320px 2;
   column-gap: var(--space-4);
 }
 
-/* Each category is a white card (--color-surface from :root), kept whole in
-   one column */
 .groceryGroup {
   break-inside: avoid;
   margin-bottom: var(--space-3);
@@ -987,7 +1046,6 @@ body:has(.recipeDialog[open]) {
   background: var(--color-surface);
 }
 
-/* The card's edge already closes the list, so the last row needs no line */
 .groceryGroup .groceryItem:last-child {
   border-bottom: 0;
 }
@@ -1006,8 +1064,6 @@ body:has(.recipeDialog[open]) {
 
 .groceryItem {
   display: grid;
-  /* Name, cost and remove (empty for recipe items) on the first line; the
-     amount, with its − and + for recipe items, on the line under the name */
   grid-template-columns: 1fr 90px 28px;
   grid-template-areas:
     "label cost remove"
@@ -1050,7 +1106,7 @@ body:has(.recipeDialog[open]) {
 
 .groceryQty {
   grid-area: qty;
-  padding-left: 30px; /* lines up with the name, past the checkbox */
+  padding-left: 30px;
 }
 
 .groceryCost {
@@ -1062,7 +1118,6 @@ body:has(.recipeDialog[open]) {
   grid-area: remove;
 }
 
-/* − [ 2 ] + bottles · 2 bottles (385 ml each) · Reset */
 .qtyEditor {
   display: flex;
   flex-wrap: wrap;
@@ -1109,7 +1164,6 @@ body:has(.recipeDialog[open]) {
   -moz-appearance: textfield;
 }
 
-/* The − and + buttons replace the browser's own tiny arrows */
 .qtyInput::-webkit-inner-spin-button,
 .qtyInput::-webkit-outer-spin-button {
   -webkit-appearance: none;
@@ -1146,7 +1200,6 @@ body:has(.recipeDialog[open]) {
   font-size: 13px;
 }
 
-/* Ticked: struck through and faded, still readable */
 .groceryItem.isChecked .groceryName,
 .groceryItem.isChecked .groceryQty,
 .groceryItem.isChecked .groceryCost {
@@ -1176,7 +1229,6 @@ body:has(.recipeDialog[open]) {
   outline-offset: 2px;
 }
 
-/* Add an item: name takes the spare width, then quantity, unit and Add */
 .addItemForm {
   display: grid;
   grid-template-columns: 1fr 90px minmax(120px, 170px) auto;
@@ -1191,7 +1243,6 @@ body:has(.recipeDialog[open]) {
   margin: 0;
 }
 
-/* All / To buy / Checked */
 .filterTabs {
   display: inline-flex;
   flex-wrap: wrap;
@@ -1235,9 +1286,6 @@ body:has(.recipeDialog[open]) {
   margin: 0 0 4px;
 }
 
-/* Login and sign up: one centred column on the page background, no sidebar.
-   Order follows the wireframe: logo, title, fields, button, switch link, OR,
-   Continue with Google. */
 .authPage {
   box-sizing: border-box;
   min-height: 100vh;
@@ -1304,7 +1352,6 @@ body:has(.recipeDialog[open]) {
   outline-offset: 2px;
 }
 
-/* "———— OR ————" */
 .authDivider {
   display: flex;
   align-items: center;
@@ -1343,7 +1390,6 @@ body:has(.recipeDialog[open]) {
   color: var(--color-primary);
 }
 
-/* While the saved session is read, before deciding login page or app */
 .authLoading {
   padding: var(--space-4);
   text-align: center;
@@ -1375,7 +1421,6 @@ body:has(.recipeDialog[open]) {
   font-size: 14px;
 }
 
-/* Tablets and small laptops: the week wraps onto two rows */
 @media (max-width: 1100px) {
   .homeTop {
     grid-template-columns: 1fr;
@@ -1386,8 +1431,6 @@ body:has(.recipeDialog[open]) {
   }
 }
 
-/* Desktop: fixed left rail. The green panel is drawn by ::before so its
-   rounded top edge can start at the middle of the logo. */
 .sidebar {
   position: fixed;
   top: 0;
@@ -1405,7 +1448,6 @@ body:has(.recipeDialog[open]) {
 .sidebar::before {
   content: "";
   position: absolute;
-  /* sidebar padding + half the logo */
   top: calc(var(--sidebar-pad-top) + var(--logo-size) / 2);
   left: 0;
   right: 0;
@@ -1450,13 +1492,11 @@ body:has(.recipeDialog[open]) {
   opacity: 1;
 }
 
-/* Logo link: always full opacity, no active or hover state */
 .item.itemLogo,
 .item.itemLogo:hover {
   opacity: 1;
 }
 
-/* Logo sits flush against the top of the screen */
 .item.itemLogo {
   padding-top: 0;
 }
@@ -1476,7 +1516,6 @@ body:has(.recipeDialog[open]) {
   line-height: 1;
 }
 
-/* Below 768px: same nav, laid out as a fixed bottom bar instead */
 @media (max-width: 767px) {
   .container {
     margin-left: 0;
@@ -1495,7 +1534,6 @@ body:has(.recipeDialog[open]) {
     font-size: var(--text-label);
   }
 
-  /* Search on its own line, the two dropdowns sharing the line under it */
   .toolbar {
     flex-basis: 100%;
     flex-wrap: wrap;
@@ -1525,7 +1563,6 @@ body:has(.recipeDialog[open]) {
     grid-template-columns: 1fr;
   }
 
-  /* Form stacks above the list */
   .editor {
     grid-template-columns: 1fr;
   }
@@ -1535,7 +1572,6 @@ body:has(.recipeDialog[open]) {
     gap: var(--space-1);
   }
 
-  /* Name on its own line, then quantity, cost and Remove */
   .ingredientRow > span:first-child {
     grid-column: 1 / -1;
   }
@@ -1553,7 +1589,6 @@ body:has(.recipeDialog[open]) {
     grid-column: 1 / -1;
   }
 
-  /* Home: stats stack, each day becomes a full-width row */
   .statGrid {
     grid-template-columns: 1fr;
     gap: 12px;
@@ -1571,13 +1606,11 @@ body:has(.recipeDialog[open]) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  /* All / To buy / Checked stay on one line */
   .filterTab {
     padding: 6px 10px;
     font-size: 13px;
   }
 
-  /* Cost and remove take only the room they need, so names have space */
   .groceryItem {
     grid-template-columns: 1fr auto auto;
   }
@@ -1586,7 +1619,6 @@ body:has(.recipeDialog[open]) {
     padding: var(--space-3) 16px;
   }
 
-  /* Name on its own line, then quantity and unit, then Add */
   .addItemForm {
     grid-template-columns: 1fr 1fr;
   }
@@ -1595,7 +1627,6 @@ body:has(.recipeDialog[open]) {
   .addItemForm .btn {
     grid-column: 1 / -1;
   }
-
 
   .sidebar {
     top: auto;
@@ -1610,7 +1641,6 @@ body:has(.recipeDialog[open]) {
     border-top: 1px solid var(--color-border);
   }
 
-  /* Bottom bar is a plain strip; no rounded panel */
   .sidebar::before {
     display: none;
   }
@@ -1631,7 +1661,6 @@ body:has(.recipeDialog[open]) {
     font-size: 10px;
   }
 
-  /* Smaller so it fits the 64px-tall bottom bar */
   .logoIcon {
     width: 36px;
     height: 36px;

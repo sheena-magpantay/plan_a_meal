@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Plus, X } from "lucide-react";
+import { ArrowRight, Clock, Globe, ListChecks, Plus, X } from "lucide-react";
 import { listMealPlan, removeFromMealPlan, getShoppingList, listRecipes } from "../api/index.js";
 import RecipeImage from "../components/RecipeImage.jsx";
 import { useAuth, displayName } from "../auth.jsx";
@@ -205,8 +205,22 @@ export default function Home() {
         {suggestions.map((recipe) => (
           <li key={recipe.id}>
             <Link className="suggestion" to={`/recipes?recipe=${recipe.id}`}>
-              <RecipeImage src={recipe.image} />
-              <span>{recipe.name}</span>
+              <div className="suggestionMedia">
+                <RecipeImage src={recipe.image} />
+                <ul className="suggestionInfo">
+                  <li>
+                    <Globe size={14} aria-hidden="true" /> {recipe.cuisine}
+                  </li>
+                  <li>
+                    <ListChecks size={14} aria-hidden="true" /> {recipe.ingredient_count}{" "}
+                    ingredients
+                  </li>
+                  <li>
+                    <Clock size={14} aria-hidden="true" /> {recipe.minutes} min
+                  </li>
+                </ul>
+              </div>
+              <span className="suggestionName">{recipe.name}</span>
             </Link>
           </li>
         ))}
