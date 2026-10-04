@@ -2,7 +2,7 @@
 
 **Live site:** https://plan-a-meal.onrender.com/
 
-**API:** https://your-api.onrender.com/healthz
+**API:** https://plan-a-meal.onrender.com/healthz
 
 **Demo video:** (https://drive.google.com/file/d/1BF1ayvgUcFD1uIKioJUWvwHAKqE33---/view?usp=sharing)
 
