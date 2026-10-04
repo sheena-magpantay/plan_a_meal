@@ -1,8 +1,5 @@
 # AI usage
 
-This project was built with AI assistance. This file is the record of it. It is
-graded as the finals badge, and it is worth 100 points.
-
 The assistant I used throughout was **Claude (Claude Code)**. It wrote most of the back end. I wrote the smaller building blocks of the client, the sidebar, and some of the styling myself.
 
 ## 1. How I used AI
@@ -78,6 +75,26 @@ The assistant I used throughout was **Claude (Claude Code)**. It wrote most of t
 - **What was wrong with it:** Anyone, without logging in, could call that function with a username and get back that person's email address.
 - **What I did instead:** Removed username login. `signIn` now takes an email only, the error says "Wrong email or password", and the login form has no username field. Usernames are still used as display names.
 - **Commit:** https://github.com/sheena-magpantay/plan_a_meal/commit/ce030ab04ec6fc884f07f5631ee69d80d38758d4
+  
+### Case 4 - The wrong Supabase key variable
+
+- **What it gave me:** The first Supabase setup: `client/src/supabase.js`, the `.env.example` and the setup steps in the README. They said to put the *publishable* key into the variable called `VITE_SUPABASE_PUBLISHABLE_KEY`.
+- **What was wrong with it:** The variable is named as publishable key and that was the wrong one. With the wrong key the app could not connect to Supabase.
+- **What I did instead:** Went through the whole Supabase integration again. I copied the project URL and the correct anon key from the Supabase dashboard into `client/.env`. Instead of `VITE_SUPABASE_PUBLISHABLE_KEY`, I changed it into `VITE_SUPABASE_ANON_KEY`, I also prompted to change the affected codes, and it worked. 
+- **Commit:** https://github.com/sheena-magpantay/plan_a_meal/commit/df1d33f156e45ccdb35cfa73719ab8fbaa977038
+  
+### Case 5 - Shopping list amounts you could not buy
+- **What it gave me:** The first `server/db/shoppingList.js` combined ingredients only when the name and the unit were exactly the same, and kept each recipe's measurements as they were.
+- **What was wrong with it:** The list asked for things like "3 tbsp" of soy sauce, which you cannot buy in a store. The same ingredient also showed up on separate lines when the recipes used different units, like "1 head Garlic" and "3 clove Garlic".
+- **What I did instead:** Asked for the list to match how a supermarket sells things. Each ingredient is now matched to a product in `storeProducts.js`, the amounts are converted to that product's unit, added up, and rounded up to whole packs, so it says "1 bottle (385 ml)".
+- **Commit:** https://github.com/sheena-magpantay/plan_a_meal/commit/ed284dc37171c1d0b037b45017011d91508c24dd
+
+### Case 6 - Recipe costs did not match the shopping list
+
+- **What it gave me:** In `server/db/recipes.js`, every ingredient had a peso cost the AI wrote by hand, and anything measured in cups or spoons was set to ₱0.
+- **What was wrong with it:** Those numbers were guesses, not the store prices in `storeProducts.js`. A recipe card showed one total, and the shopping list for the same recipe added up to something different, so the cost on the recipe could not be trusted.
+- **What I did instead:** Worked out each ingredient's cost from the store catalog with `ingredientCost(name, quantity, unit)`, which takes its share of the pack price. The hand-written cost is only used when the ingredient is not in the catalog.
+- **Commit:** https://github.com/sheena-magpantay/plan_a_meal/commit/e6d1788a7cf996219c18b7d046077bb66f320a97
 
 ## 3. Who wrote what
 ### Written by me
