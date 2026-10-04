@@ -1,3 +1,6 @@
+import { existsSync } from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import express from 'express'
 import cors from 'cors'
 import { pool } from './db/pool.js'
@@ -310,6 +313,15 @@ app.delete('/api/shopping-list/items/:id', async (request, response, next) => {
     next(error)
   }
 })
+
+const clientDist = fileURLToPath(new URL('../client/dist', import.meta.url))
+
+if (existsSync(clientDist)) {
+  app.use(express.static(clientDist))
+  app.get(/^\/(?!api\/).*/, (request, response) => {
+    response.sendFile(path.join(clientDist, 'index.html'))
+  })
+}
 
 app.use((request, response) => {
   response.status(404).json({ error: 'No such route' })
