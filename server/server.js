@@ -4,13 +4,6 @@ import { pool } from './db/pool.js'
 import * as recipes from './recipesRepo.js'
 
 const app = express()
-
-// CORS before the routes. Middleware registered after a route never sees that
-// route's requests, which is the m4 lesson showing up in production.
-//
-// Name your origins. app.use(cors()) with no options sends
-// Access-Control-Allow-Origin: *, which lets any site on the internet call this
-// API from a visitor's browser, and is incompatible with cookies.
 const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:5173')
   .split(',')
   .map((origin) => origin.trim())
@@ -19,13 +12,10 @@ const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:5173')
 app.use(cors({ origin: allowedOrigins }))
 app.use(express.json({ limit: '100kb' }))
 
-// Is the process alive?
 app.get('/healthz', (request, response) => {
   response.json({ ok: true })
 })
 
-// Is the database reachable? A different question, and the one that tells you
-// in two seconds which half of a problem you have.
 app.get('/readyz', async (request, response) => {
   try {
     await pool.query('SELECT 1')
@@ -36,15 +26,11 @@ app.get('/readyz', async (request, response) => {
   }
 })
 
-// Ids are SERIAL integers. Anything else cannot match a row, and passing it to
-// PostgreSQL would be a 500 (invalid input syntax) instead of a 404.
 function parseId(value) {
   const id = Number(value)
   return Number.isInteger(id) && id > 0 ? id : null
 }
 
-// Validation lives on the server because the client can be bypassed. The
-// browser form is for a fast, friendly message; this is for correctness.
 function validateIngredients(body) {
   if (!Array.isArray(body.ingredients)) {
     return { errors: ['ingredients must be a list'], value: [] }
@@ -76,9 +62,6 @@ function validateIngredients(body) {
   return { errors, value }
 }
 
-// A week is named by its Monday, as YYYY-MM-DD. The client works out which
-// Monday "this week" is in the user's own time zone and sends it, because the
-// server's clock may be in a different one.
 function parseWeek(value) {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null
   const date = new Date(`${value}T00:00:00Z`)
@@ -201,7 +184,6 @@ app.post('/api/recipes', async (request, response, next) => {
   }
 })
 
-// Only recipes added through POST /api/recipes; the seeded ones are a 404.
 app.delete('/api/recipes/:id', async (request, response, next) => {
   const id = parseId(request.params.id)
   if (!id) return response.status(404).json({ error: 'Not found' })
@@ -235,7 +217,6 @@ app.put('/api/recipes/:id/ingredients', async (request, response, next) => {
   }
 })
 
-// GET /api/meal-plan?week=2026-09-21
 app.get('/api/meal-plan', async (request, response, next) => {
   const week = parseWeek(request.query.week)
   if (!week) return response.status(400).json({ error: WEEK_ERROR })
@@ -273,7 +254,6 @@ app.delete('/api/meal-plan/:id', async (request, response, next) => {
   }
 })
 
-// GET /api/shopping-list?week=2026-09-21
 app.get('/api/shopping-list', async (request, response, next) => {
   const week = parseWeek(request.query.week)
   if (!week) return response.status(400).json({ error: WEEK_ERROR })
@@ -285,7 +265,6 @@ app.get('/api/shopping-list', async (request, response, next) => {
   }
 })
 
-// Tick or untick one line: { week_start, item_key, checked }
 app.put('/api/shopping-list/checks', async (request, response, next) => {
   const { errors, value } = validateCheck(request.body ?? {})
   if (errors.length > 0) return response.status(400).json({ error: errors.join('; ') })
@@ -297,7 +276,6 @@ app.put('/api/shopping-list/checks', async (request, response, next) => {
   }
 })
 
-// Change how much of a line to buy: { week_start, item_key, quantity }
 app.put('/api/shopping-list/quantities', async (request, response, next) => {
   const { errors, value } = validateQuantity(request.body ?? {})
   if (errors.length > 0) return response.status(400).json({ error: errors.join('; ') })
@@ -309,7 +287,6 @@ app.put('/api/shopping-list/quantities', async (request, response, next) => {
   }
 })
 
-// Add something to the list by hand: { week_start, name, quantity, unit }
 app.post('/api/shopping-list/items', async (request, response, next) => {
   const { errors, value } = validateShoppingItem(request.body ?? {})
   if (errors.length > 0) return response.status(400).json({ error: errors.join('; ') })
@@ -338,15 +315,11 @@ app.use((request, response) => {
   response.status(404).json({ error: 'No such route' })
 })
 
-// The detail goes in your logs; the visitor gets a plain message. Sending a
-// stack trace to a stranger tells them about your file layout and dependencies.
 app.use((error, request, response, next) => {
   console.error(error)
   response.status(500).json({ error: 'Something went wrong on the server' })
 })
 
-// The host chooses the port and tells you through PORT. Hardcoding 3000 is the
-// commonest reason a first deploy is marked unhealthy and killed.
 const port = process.env.PORT || 3000
 
 app.listen(port, () => {
