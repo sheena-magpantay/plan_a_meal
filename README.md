@@ -1,8 +1,10 @@
 # Plan A Meal: Weekly Meal Planner
 
 **Live site:** https://yourusername.github.io/your-repo-name/
+
 **API:** https://your-api.onrender.com/healthz
-**Demo video:** [(link)](https://drive.google.com/file/d/1BF1ayvgUcFD1uIKioJUWvwHAKqE33---/view?usp=sharing)
+
+**Demo video:** (https://drive.google.com/file/d/1BF1ayvgUcFD1uIKioJUWvwHAKqE33---/view?usp=sharing)
 
 ## **1\. Overview**
 
