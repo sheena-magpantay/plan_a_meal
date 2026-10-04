@@ -117,4 +117,4 @@ https://github.com/sheena-magpantay/plan_a_meal/blob/main/AI-USAGE.md
 
 ## License
 
-MIT, see [LICENSE](LICENSE). Put your own name in it.
+MIT, see [LICENSE](LICENSE).
