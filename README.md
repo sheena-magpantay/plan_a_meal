@@ -105,8 +105,6 @@ plan_a_meal/
 ```
             
 ## **6\. Screenshots**
-
-**Week 2 progress:**  
 ![login](docs/assets/login.PNG)
 ![signup](docs/assets/signup.PNG)
 ![home](docs/assets/home.PNG)
