@@ -33,3 +33,12 @@ export const AI_RECIPE_STEPS = [
 ];
 
 export const PRICING_STEPS = ["Getting ready", "Checking store prices", "Calculating", "Almost there"];
+
+export const AI_PLAN_STEPS = [
+  "Getting ready",
+  "Asking the AI",
+  "Mixing up cuisines",
+  "Planning your week",
+  "Updating your list",
+  "Almost there",
+];

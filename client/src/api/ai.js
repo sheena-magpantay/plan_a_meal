@@ -8,6 +8,11 @@ export async function estimateItemCost(item) {
   return Number(estimated_cost) || 0
 }
 
+export async function planWeek({ recipes, days, prompt }) {
+  const { plan } = await call({ task: 'plan', recipes, days, prompt })
+  return Array.isArray(plan) ? plan : []
+}
+
 async function call(body) {
   const { data, error } = await supabase.functions.invoke('generate-recipe', { body })
   if (error) {

@@ -1,7 +1,15 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Clock, Globe, ListChecks, Plus, X } from "lucide-react";
-import { listMealPlan, removeFromMealPlan, getShoppingList, listRecipes } from "../api/index.js";
+import { ArrowRight, Clock, Globe, ListChecks, Plus, Sparkles, X } from "lucide-react";
+import {
+  listMealPlan,
+  removeFromMealPlan,
+  getShoppingList,
+  listRecipes,
+  addToMealPlan,
+} from "../api/index.js";
+import { AI_ENABLED, planWeek } from "../api/ai.js";
+import LoadingLabel, { AI_PLAN_STEPS } from "../components/LoadingLabel.jsx";
 import RecipeImage from "../components/RecipeImage.jsx";
 import { useAuth, displayName } from "../auth.jsx";
 import { peso } from "../format.js";
@@ -42,6 +50,11 @@ export default function Home() {
   const [error, setError] = useState("");
   const [removingId, setRemovingId] = useState(null);
   const [removeError, setRemoveError] = useState("");
+  const [recipes, setRecipes] = useState([]);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiError, setAiError] = useState("");
+  const [aiNote, setAiNote] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -50,6 +63,7 @@ export default function Home() {
         if (cancelled) return;
         setPlan(planRows);
         setShopping(shoppingRows);
+        setRecipes(recipes);
         setSuggestions(pickSuggestions(recipes, planRows));
         setStatus("ready");
       })
@@ -78,6 +92,52 @@ export default function Home() {
       setRemoveError(`Couldn't remove ${entry.recipe_name}: ${err.message}`);
     } finally {
       setRemovingId(null);
+    }
+  }
+
+  async function planWithAi() {
+    if (aiBusy) return;
+    const openDays = DAYS.filter((day) => !plan.some((entry) => entry.day === day));
+    setAiError("");
+    setAiNote("");
+    if (openDays.length === 0) {
+      setAiError("Every day already has a meal. Remove some to let AI plan them.");
+      return;
+    }
+
+    setAiBusy(true);
+    try {
+      const picks = await planWeek({
+        days: openDays,
+        prompt: aiPrompt.trim(),
+        recipes: recipes.map((recipe) => ({
+          id: recipe.id,
+          name: recipe.name,
+          cuisine: recipe.cuisine,
+          minutes: recipe.minutes,
+          calories: recipe.calories,
+          cost: recipe.total_cost,
+        })),
+      });
+      if (picks.length === 0) throw new Error("The AI didn't return a plan. Try again.");
+
+      for (const pick of picks) {
+        await addToMealPlan({ recipe_id: pick.recipe_id, day: pick.day, week_start: weekStart });
+      }
+      const [planRows, shoppingRows] = await Promise.all([
+        listMealPlan(weekStart),
+        getShoppingList(weekStart),
+      ]);
+      setPlan(planRows);
+      setShopping(shoppingRows);
+      setSuggestions(pickSuggestions(recipes, planRows));
+      setAiNote(
+        `Planned ${picks.length} ${picks.length === 1 ? "day" : "days"}. Your shopping list is updated.`
+      );
+    } catch (err) {
+      setAiError(err.message);
+    } finally {
+      setAiBusy(false);
     }
   }
 
@@ -144,6 +204,43 @@ export default function Home() {
       <p className="weekRange text-muted">
         {formatWeekRange(weekStart)} · starts fresh every Monday
       </p>
+
+      {AI_ENABLED && (
+        <div className="aiBox aiPlanBox">
+          <label className="aiTitle" htmlFor="ai-plan-prompt">
+            <Sparkles size={16} aria-hidden="true" /> Let AI plan your week
+          </label>
+          <div className="aiRow">
+            <input
+              id="ai-plan-prompt"
+              className="input"
+              placeholder="Optional, e.g. budget-friendly, more Filipino, no pork"
+              maxLength={300}
+              value={aiPrompt}
+              onChange={(event) => setAiPrompt(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  planWithAi();
+                }
+              }}
+            />
+            <button type="button" className="btn btn-accent" onClick={planWithAi} disabled={aiBusy}>
+              {aiBusy ? <LoadingLabel messages={AI_PLAN_STEPS} /> : "Plan my week"}
+            </button>
+          </div>
+          {aiError && (
+            <p className="errorText" role="alert">
+              {aiError}
+            </p>
+          )}
+          {aiNote && !aiError && (
+            <p className="aiNote" role="status">
+              {aiNote}
+            </p>
+          )}
+        </div>
+      )}
 
       {removeError && (
         <p className="errorText" role="alert">

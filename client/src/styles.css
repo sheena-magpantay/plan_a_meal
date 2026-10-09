@@ -1666,3 +1666,7 @@ body:has(.recipeDialog[open]) {
     height: 36px;
   }
 }
+
+.aiPlanBox {
+  margin-bottom: var(--space-3);
+}
