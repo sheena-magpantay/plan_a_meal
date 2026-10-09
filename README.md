@@ -37,15 +37,6 @@ cd client
 npm run dev                 # http://localhost:5173
 ```
 
-**Demo mode, the client only.** No accounts, no database, no AI. Leave the two `VITE_SUPABASE_` values empty in `client/.env`.
-
-```bash
-cd client
-npm install
-cp .env.example .env        # leave VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY empty
-npm run dev                 # http://localhost:5173
-```
-
 **The whole stack with Express.** Needs a PostgreSQL, either local or hosted.
 
 ```bash
@@ -130,6 +121,9 @@ Run `server/db/schema.sql` once against the Render database (`npm run db:schema`
 9. To change your username, open **Profile**, click **Edit** next to your name, type the new one and press the checkmark.  
 10. The weekly meal plan will reset after the week is finished.
 
+##  Architecture
+
+The React app is served by the Express server on Render and runs in the user's browser. On the live site, the browser talks straight to Supabase: Supabase Auth handles login, and its PostgreSQL stores each user's meal plan, own recipes, ingredient edits and shopping list. For the AI features, the browser calls the `generate-recipe` Edge Function on Supabase, which keeps the Gemini key on the server and calls the Google Gemini API. The 40 starter recipes and store prices are bundled in the client, and the Express `/api` routes with Render PostgreSQL are only used in Express mode.
 
 ##  Project structure
 
