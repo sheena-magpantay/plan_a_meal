@@ -10,7 +10,7 @@
 
 Plan a Meal lets someone assign recipes to the days of the week and automatically builds the grocery shopping list those meals require. This web is for those people who want an easier way to plan meals and grocery list. In the moment they open it, they're trying to choose recipes for the days ahead, and they won't have to worry about listing the ingredients themselves.
 
-## Setup and installation
+##  Setup and installation
 
 **You need:** Node.js 20 or newer and a free [Supabase](https://supabase.com) project.
 
@@ -28,14 +28,88 @@ Plan a Meal lets someone assign recipes to the days of the week and automaticall
 3. **Database:** in your Supabase project, open the **SQL Editor**, paste all of `supabase/schema.sql` and click **Run**.
 4. **AI features (optional):** deploy the `generate-recipe` Edge Function in Supabase, then add your Google AI Studio key under **Edge Functions → Secrets** as `GEMINI_API_KEY`.
 
-##  How to run it
+## How to run it**
+
+**With accounts (Supabase).** This is how the live site runs. Needs the `client/.env` values from Setup.
 
 ```bash
 cd client
+npm run dev                 # http://localhost:5173
+```
+
+**Demo mode, the client only.** No accounts, no database, no AI. Leave the two `VITE_SUPABASE_` values empty in `client/.env`.
+
+```bash
+cd client
+npm install
+cp .env.example .env        # leave VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY empty
+npm run dev                 # http://localhost:5173
+```
+
+**The whole stack with Express.** Needs a PostgreSQL, either local or hosted.
+
+```bash
+# 1. the database
+docker run --name my-pg -e POSTGRES_PASSWORD=devpassword   -e POSTGRES_DB=haunted -p 5432:5432 -d postgres:17
+
+# 2. the API
+cd server
+npm install
+cp .env.example .env        # check DATABASE_URL
+npm run db:reset            # creates the tables and adds the recipes
+npm run dev                 # http://localhost:3000
+
+# 3. the client, in another terminal
+cd client
+npm install
+cp .env.example .env        # leave the VITE_SUPABASE_ values empty
+# add VITE_USE_MOCK_API=false
 npm run dev
 ```
 
-Then open http://localhost:5173.
+Check the API on its own before you blame the client:
+
+```bash
+curl http://localhost:3000/healthz       # is the process alive
+curl http://localhost:3000/readyz        # is the database reachable
+curl http://localhost:3000/api/recipes
+```
+
+## Environment variables
+
+| Name | Where | What it is |
+| --- | --- | --- |
+| `DATABASE_URL` | server | PostgreSQL connection string. Contains a password |
+| `CORS_ORIGINS` | server | comma-separated origins allowed to call the API |
+| `NODE_ENV` | server | `production` on your host |
+| `VITE_SUPABASE_URL` | client, at build time | your Supabase project URL |
+| `VITE_SUPABASE_ANON_KEY` | client, at build time | your Supabase publishable (anon) key, never the secret one |
+| `VITE_USE_MOCK_API` | client, at build time | only `false` turns demo mode off; ignored when Supabase is set |
+| `VITE_API_BASE_URL` | client, at build time | your API's public URL, no trailing slash |
+| `VITE_BASE_PATH` | client, at build time | set by the GitHub Pages workflow; leave it unset elsewhere |
+| `GEMINI_API_KEY` | Supabase Edge Function secret | your Google AI Studio key |
+| `GEMINI_MODEL` | Supabase Edge Function secret | optional, overrides the default Gemini model |
+
+Every `VITE_` value is compiled into the built JavaScript and is public. Never put a secret key, a password or a connection string in one. The Supabase anon key is safe there because Row Level Security protects the data.
+
+
+## Deploying
+
+**Supabase.** Run `supabase/schema.sql` once in the SQL Editor, deploy the `generate-recipe` Edge Function, and add `GEMINI_API_KEY` under Edge Functions → Secrets. Under Authentication → URL Configuration, add your Render and GitHub Pages URLs so email confirmation and Google login can redirect back.
+
+**Render (live site).** One web service from this repository that builds the client and runs the server. `server.js` serves `client/dist`, so the site and the API share one URL. Use settings like:
+
+- Build command: `cd client && npm ci && npm run build && cd ../server && npm ci`
+- Start command: `cd server && npm start`
+- Environment: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `DATABASE_URL`, `CORS_ORIGINS`, `NODE_ENV=production`
+
+Run `server/db/schema.sql` once against the Render database (`npm run db:schema` with its `DATABASE_URL`).
+
+**GitHub Pages.** Already wired up in `.github/workflows/deploy-pages.yml`. One-time steps:
+
+1. Settings > Pages > Build and deployment > Source: **GitHub Actions**. Without this the workflow goes green and publishes nothing.
+2. Under Settings > Secrets and variables > Actions > Variables, add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`, then re-run the workflow.
+
 
 ##  Features
 
@@ -63,6 +137,7 @@ Then open http://localhost:5173.
 8. After that, the user can see the updated shopping list. Once a few days have recipes assigned, the Shopping List screen auto-generates a list from everything assigned that week, grouped into categories (Pantry, Protein, Dairy, etc.) with a checkbox per item, a running quantity and total cost, and a "Download List" button for taking it to the store.  
 9. To change your username, open **Profile**, click **Edit** next to your name, type the new one and press the checkmark.  
 10. The weekly meal plan will reset after the week is finished.
+
 
 ##  Project structure
 
@@ -131,6 +206,9 @@ plan_a_meal/
 ![grocerylist](docs/assets/shopping.PNG)
 ![profile](docs/assets/profile.PNG)
 
+## Author
+
+Sheena Magpantay, CS-403
 
 ## AI usage
 
