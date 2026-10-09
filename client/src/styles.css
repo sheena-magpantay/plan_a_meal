@@ -1670,3 +1670,27 @@ body:has(.recipeDialog[open]) {
 .aiPlanBox {
   margin-bottom: var(--space-3);
 }
+
+.usernameRow {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.usernameForm {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.usernameForm .input {
+  flex: 1;
+  min-width: 0;
+  max-width: 240px;
+}
+
+.usernameMessage {
+  margin: 6px 0 0;
+  font-size: 13px;
+}

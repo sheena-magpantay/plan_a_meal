@@ -59,6 +59,25 @@ export async function signUp({ username, email, password }) {
   return { needsConfirmation: !data.session };
 }
 
+export async function updateUsername(username) {
+  const name = username.trim();
+  if (!/^[A-Za-z0-9_]{3,20}$/.test(name)) {
+    throw new Error("Username: 3 to 20 letters, numbers or underscores.");
+  }
+
+  const { data: current } = await supabase.auth.getUser();
+  if (current?.user?.user_metadata?.username === name) return;
+
+  const { data: available, error: lookupError } = await supabase.rpc("username_available", {
+    name,
+  });
+  if (lookupError) throw friendly(lookupError);
+  if (!available) throw new Error("That username is taken. Try another.");
+
+  const { error } = await supabase.auth.updateUser({ data: { username: name } });
+  if (error) throw friendly(error);
+}
+
 export async function signInWithGoogle() {
   const { error } = await supabase.auth.signInWithOAuth({
     provider: "google",
