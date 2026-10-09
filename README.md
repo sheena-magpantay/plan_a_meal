@@ -121,10 +121,6 @@ Run `server/db/schema.sql` once against the Render database (`npm run db:schema`
 9. To change your username, open **Profile**, click **Edit** next to your name, type the new one and press the checkmark.  
 10. The weekly meal plan will reset after the week is finished.
 
-##  Architecture
-
-The React app is served by the Express server on Render and runs in the user's browser. On the live site, the browser talks straight to Supabase: Supabase Auth handles login, and its PostgreSQL stores each user's meal plan, own recipes, ingredient edits and shopping list. For the AI features, the browser calls the `generate-recipe` Edge Function on Supabase, which keeps the Gemini key on the server and calls the Google Gemini API. The 40 starter recipes and store prices are bundled in the client, and the Express `/api` routes with Render PostgreSQL are only used in Express mode.
-
 ##  Project structure
 
 ```
@@ -191,6 +187,16 @@ plan_a_meal/
 ![edit_ingredient](docs/assets/edit_ingredient.PNG)
 ![grocerylist](docs/assets/shopping.PNG)
 ![profile](docs/assets/profile.PNG)
+
+##  Architecture
+
+The React app is served by the Express server on Render and runs in the user's browser. On the live site, the browser talks straight to Supabase: Supabase Auth handles login, and its PostgreSQL stores each user's meal plan, own recipes, ingredient edits and shopping list. For the AI features, the browser calls the `generate-recipe` Edge Function on Supabase, which keeps the Gemini key on the server and calls the Google Gemini API. The 40 starter recipes and store prices are bundled in the client, and the Express `/api` routes with Render PostgreSQL are only used in Express mode.
+
+## What I would do next
+
+- **A weekly budget goal.** Let the user set a budget on their profile, and show on the Home screen how much is left or warn when the week's meals go over it. The "Budget this week" card already adds up the cost, so this mostly needs one saved number and a comparison.
+- **Favourite recipes.** A heart button on each recipe card and a "Favourites" choice in the cuisine filter, next to "My recipes", so people can find the meals they cook often without searching.
+- **Repeat last week.** A button on the Home screen that copies last week's meals into the empty days of this week. Many families cook the same dishes often, and the plan already starts fresh every Monday, so this saves them planning from scratch.
 
 ## Author
 
