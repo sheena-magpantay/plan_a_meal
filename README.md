@@ -12,19 +12,30 @@ Plan a Meal lets someone assign recipes to the days of the week and automaticall
 
 ## **2\. Setup and installation**
 
-1. Clone the code git clone https://github.com/sheena-magpantay/plan_a_meal.git
+**You need:** Node.js 20 or newer and a free [Supabase](https://supabase.com) project.
+
+1. **Clone the repo and install the dependencies**
+   ```bash
+   git clone https://github.com/sheena-magpantay/plan_a_meal.git
    cd plan_a_meal/client
-2. Install dependencies
    npm install
-   npm install lucide-react
-   npm install react-router-dom
-4. **Environment variables:** copy `.env.example` to `.env` 
-5. **Database:** in your Supabase project, open the SQL Editor, paste all of
-   `supabase/schema.sql` and click **Run**. 
+   ```
+2. **Environment variables:** copy `client/.env.example` to `client/.env` and fill in the values from **Supabase → Project Settings → API**:
+   ```
+   VITE_SUPABASE_URL=https://<your-project-ref>.supabase.co
+   VITE_SUPABASE_ANON_KEY=<your anon key>
+   ```
+3. **Database:** in your Supabase project, open the **SQL Editor**, paste all of `supabase/schema.sql` and click **Run**.
+4. **AI features (optional):** deploy the `generate-recipe` Edge Function in Supabase, then add your Google AI Studio key under **Edge Functions → Secrets** as `GEMINI_API_KEY`.
 
 ## **3\. How to run it**
 
-To run the frontend code, enter cd src and then npm run dev in the terminal. 
+```bash
+cd client
+npm run dev
+```
+
+Then open http://localhost:5173.
 
 ## **4\. Features and usage**
 
@@ -51,6 +62,7 @@ plan_a_meal/
 │   │   │   └── supabaseApi.js  
 │   │   ├── assets/         
 │   │   ├── components/
+│   │   │   ├── LoadingLabel.jsx
 │   │   │   └── RecipeImage.jsx
 │   │   ├── screens/        
 │   │   ├── App.jsx        
@@ -83,8 +95,6 @@ plan_a_meal/
 │   ├── package.json
 │   ├── recipesRepo.js      
 │   └── server.js           
-├── supabase/
-│   └── schema.sql          
 ├── .env.example
 ├── .gitignore
 ├── AI-USAGE.md
@@ -105,11 +115,6 @@ plan_a_meal/
 ![edit_ingredient](docs/assets/edit_ingredient.PNG)
 ![grocerylist](docs/assets/shopping.PNG)
 ![profile](docs/assets/profile.PNG)
-
-
-## **7\. Known issues and next steps**
-
-The known issue is that the integrated Gemini API frequently shows an error saying it is busy and to try again later when it suggests a recipe. I have to fix it this week so that it will run smoothly. I also need to improve the user interface of the other screens, specifically the email integration. 
 
 
 ## AI usage
