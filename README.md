@@ -67,14 +67,6 @@ cp .env.example .env        # leave the VITE_SUPABASE_ values empty
 npm run dev
 ```
 
-Check the API on its own before you blame the client:
-
-```bash
-curl http://localhost:3000/healthz       # is the process alive
-curl http://localhost:3000/readyz        # is the database reachable
-curl http://localhost:3000/api/recipes
-```
-
 ## Environment variables
 
 | Name | Where | What it is |
