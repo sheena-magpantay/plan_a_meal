@@ -6,11 +6,11 @@
 
 **Demo video:** (https://drive.google.com/file/d/1BF1ayvgUcFD1uIKioJUWvwHAKqE33---/view?usp=sharing)
 
-## **\ Overview**
+## ** Overview**
 
 Plan a Meal lets someone assign recipes to the days of the week and automatically builds the grocery shopping list those meals require. This web is for those people who want an easier way to plan meals and grocery list. In the moment they open it, they're trying to choose recipes for the days ahead, and they won't have to worry about listing the ingredients themselves.
 
-## **\ Setup and installation**
+## ** Setup and installation**
 
 **You need:** Node.js 20 or newer and a free [Supabase](https://supabase.com) project.
 
@@ -28,7 +28,7 @@ Plan a Meal lets someone assign recipes to the days of the week and automaticall
 3. **Database:** in your Supabase project, open the **SQL Editor**, paste all of `supabase/schema.sql` and click **Run**.
 4. **AI features (optional):** deploy the `generate-recipe` Edge Function in Supabase, then add your Google AI Studio key under **Edge Functions → Secrets** as `GEMINI_API_KEY`.
 
-## **\. How to run it**
+## ** How to run it**
 
 ```bash
 cd client
@@ -37,7 +37,7 @@ npm run dev
 
 Then open http://localhost:5173.
 
-## **\ Features**
+## ** Features**
 
 - **Accounts:** sign up or log in with email or Google. Each person's plan, edits and shopping list are saved to their own account.
 - **Weekly planner:** assign recipes to Monday to Sunday. The week starts fresh every Monday.
@@ -51,7 +51,7 @@ Then open http://localhost:5173.
 - **Home dashboard:** budget this week, average calories, shopping items left and suggested meals.
 - **Profile:** see your account details, change your username and log out.
 
-## **\ How to use it**
+## ** How to use it**
 
 1. Log in or create an account.  
 2. After logging in, the user sees the week: three cards (budget this week, average calories, and shopping items), a Shopping List preview panel, all seven days of the week with whatever is already assigned, and suggested meals below.  
@@ -64,7 +64,7 @@ Then open http://localhost:5173.
 9. To change your username, open **Profile**, click **Edit** next to your name, type the new one and press the checkmark.  
 10. The weekly meal plan will reset after the week is finished.
 
-## **\ Project structure**
+## ** Project structure**
 
 ```
 plan_a_meal/
@@ -121,7 +121,7 @@ plan_a_meal/
 └── START-HERE.md
 ```
             
-## **\ Screenshots**
+## ** Screenshots**
 ![login](docs/assets/login.PNG)
 ![signup](docs/assets/signup.PNG)
 ![home](docs/assets/home.PNG)
