@@ -1516,6 +1516,11 @@ body:has(.recipeDialog[open]) {
   line-height: 1;
 }
 
+.homeIcon,
+.homeLabel {
+  display: none;
+}
+
 @media (max-width: 767px) {
   .container {
     margin-left: 0;
@@ -1662,8 +1667,25 @@ body:has(.recipeDialog[open]) {
   }
 
   .logoIcon {
-    width: 36px;
-    height: 36px;
+    display: none;
+  }
+
+  .homeIcon,
+  .homeLabel {
+    display: block;
+  }
+
+  .item.itemLogo {
+    padding-top: var(--space-1);
+    opacity: 0.55;
+  }
+
+  .item.itemLogo:hover {
+    opacity: 0.8;
+  }
+
+  .item.itemLogo.itemActive {
+    opacity: 1;
   }
 }
 

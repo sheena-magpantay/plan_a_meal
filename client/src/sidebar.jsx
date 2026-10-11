@@ -1,9 +1,9 @@
 import { NavLink } from "react-router-dom";
-import { BookOpen, ShoppingCart, User } from "lucide-react";
+import { BookOpen, House, ShoppingCart, User } from "lucide-react";
 import logo from "./assets/logo.png";
 
 const nav_icons = [
-  { to: "/", end: true, img: logo },
+  { to: "/", end: true, label: "Home", Icon: House, img: logo },
   { to: "/recipes", label: "Recipes", Icon: BookOpen },
   { to: "/shopping-list", label: "Shopping list", Icon: ShoppingCart },
   { to: "/profile", label: "Profile", Icon: User },
@@ -19,15 +19,23 @@ export default function Sidebar() {
               to={to}
               end={end}
               className={({ isActive }) =>
-                img ? "item itemLogo" : isActive ? "item itemActive" : "item"
+                [
+                  "item",
+                  img && "itemLogo",
+                  isActive && "itemActive",
+                ]
+                  .filter(Boolean)
+                  .join(" ")
               }
             >
-              {img ? (
-                <img src={img} alt="" className="logoIcon" />
-              ) : (
-                <Icon className="icon" strokeWidth={1.75} />
-              )}
-              {label && <span className="label">{label}</span>}
+              {img && <img src={img} alt="" className="logoIcon" />}
+              <Icon
+                className={img ? "icon homeIcon" : "icon"}
+                strokeWidth={1.75}
+              />
+              <span className={img ? "label homeLabel" : "label"}>
+                {label}
+              </span>
             </NavLink>
           </li>
         ))}
